@@ -195,7 +195,7 @@
             white-space: nowrap;
         }
 
-        /* --- Card Animasi UI (Notifikasi Teks di Atas Nara) --- */
+        /* --- Card Animasi UI --- */
         #cardAnimOverlay {
             position: absolute;
             display: none;
@@ -291,8 +291,14 @@
         .card-slot.unlocked .card-title {
             color: #f1c40f;
         }
-        #closeCardBookBtn {
+
+        .card-book-actions {
+            display: flex;
+            gap: 10px;
             margin-top: 12px;
+        }
+
+        #closeCardBookBtn {
             padding: 5px 16px;
             background: #c0392b;
             color: #fff;
@@ -302,6 +308,22 @@
             font-family: inherit;
             font-weight: bold;
             font-size: 12px;
+        }
+
+        #resetCardDataBtn {
+            padding: 5px 12px;
+            background: #7f8c8d;
+            color: #fff;
+            border: 1px solid #95a5a6;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        #resetCardDataBtn:hover {
+            background: #e74c3c;
+            border-color: #ff6b6b;
         }
 
         /* --- Modal Zoom Detail Card --- */
@@ -545,7 +567,10 @@
         <div id="cardBookModal">
             <h2>BUKU KOLEKSI KARTU</h2>
             <div class="card-grid" id="cardGridContainer"></div>
-            <button id="closeCardBookBtn">TUTUP</button>
+            <div class="card-book-actions">
+                <button id="closeCardBookBtn">TUTUP</button>
+                <button id="resetCardDataBtn" title="Hapus seluruh data kartu tersimpan">HAPUS DATA</button>
+            </div>
         </div>
 
         <div id="cardZoomModal">
@@ -655,10 +680,14 @@
         winSfx.volume = 0.5;
         gameOverSfx.volume = 0.5;
 
+        // FUNGSI SERAGAM DAN DIPERBAIKI UNTUK MEMUTAR SFX
         function playSfx(sfxElement) {
-            if (isAudioMuted) return;
+            if (isAudioMuted || !sfxElement) return;
             sfxElement.currentTime = 0;
-            sfxElement.play().catch(e => { console.log("SFX play dicegah browser."); });
+            let p = sfxElement.play();
+            if (p !== undefined) {
+                p.catch(e => console.log("SFX Play dicegah oleh browser Autoplay Policy:", e));
+            }
         }
 
         function playExploreBGM() {
@@ -696,8 +725,19 @@
             if (!isAudioMuted) { if (battleState !== 'none') playBattleBGM(); else playExploreBGM(); }
         }
 
+        // UNLOCK AUDIO UNTUK MEMBUKA BLOKIRAN BROWSER SAAT INTERAKSI PERTAMA
         function initAudioOnFirstUserInteraction() {
             checkMapBGM();
+            const allSfxList = [waterSfx, makanSfx, dapatSfx, daggerSfx, slimeaSfx, missSfx, winSfx, gameOverSfx];
+            allSfxList.forEach(sfx => {
+                if(sfx) {
+                    sfx.play().then(() => {
+                        sfx.pause();
+                        sfx.currentTime = 0;
+                    }).catch(() => {});
+                }
+            });
+
             window.removeEventListener('click', initAudioOnFirstUserInteraction);
             window.removeEventListener('keydown', initAudioOnFirstUserInteraction);
         }
@@ -726,6 +766,7 @@
         const cardBookModal = document.getElementById('cardBookModal');
         const cardGridContainer = document.getElementById('cardGridContainer');
         const closeCardBookBtn = document.getElementById('closeCardBookBtn');
+        const resetCardDataBtn = document.getElementById('resetCardDataBtn');
         const bookBtn = document.getElementById('bookBtn');
 
         const cardZoomModal = document.getElementById('cardZoomModal');
@@ -786,16 +827,47 @@
         const coordXSpan = document.getElementById('coordX');
         const coordYSpan = document.getElementById('coordY');
 
+        /* --- SISTEM SAVE & LOAD KOLEKSI KARTU VIA LOCALSTORAGE --- */
         let cardCollection = {
             card25: false, card30: false, card35: false, card40: false,
             card45: false, card50: false, card55: false, card60: false
         };
+
+        function saveCardCollection() {
+            try {
+                localStorage.setItem('nara_cardCollection', JSON.stringify(cardCollection));
+            } catch (e) { console.log('Gagal menyimpan kartu ke localStorage'); }
+        }
+
+        function loadCardCollection() {
+            try {
+                const savedData = localStorage.getItem('nara_cardCollection');
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    Object.keys(cardCollection).forEach(key => {
+                        if (parsed.hasOwnProperty(key)) cardCollection[key] = parsed[key];
+                    });
+                }
+            } catch (e) { console.log('Gagal memuat kartu dari localStorage'); }
+        }
+
+        function resetCardCollection() {
+            showConfirmDialog("Yakin ingin MENGHAPUS seluruh koleksi kartu tersimpan?", () => {
+                Object.keys(cardCollection).forEach(key => cardCollection[key] = false);
+                saveCardCollection();
+                updateCardBookUI();
+            });
+        }
+
+        loadCardCollection(); 
+
         let isCardAnimActive = false;
         let cardAnimTimer = 0;
 
         function triggerCardAnim(cardKey) {
             if (cardCollection[cardKey]) return;
             cardCollection[cardKey] = true;
+            saveCardCollection(); 
             updateCardBookUI();
 
             playSfx(dapatSfx);
@@ -861,6 +933,11 @@
             e.stopPropagation();
             cardBookModal.style.display = 'none';
             cardZoomModal.style.display = 'none';
+        });
+
+        resetCardDataBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetCardCollection();
         });
 
         bookBtn.addEventListener('click', (e) => {
@@ -1229,7 +1306,6 @@
         const minumImg    = loadImg('minum.png');
         const semakImg    = loadImg('semakf.png'); 
 
-        /* --- Asset Slime LENGKAP --- */
         const slime0Img = loadImg('slime.png'), slime1Img = loadImg('slime1.png'), slime2Img = loadImg('slime2.png'), slime4Img = loadImg('slime4.png');
         const slimebdImg = loadImg('slimebd.png');
         const slimebstun1Img = loadImg('slimebstun1.png');
@@ -1522,6 +1598,8 @@
                 isDrinkingAnim = true; drinkStep = 0; drinkTimer = 0; drinkCooldownTimer = 20000; 
                 hideSingleFloatingBar(); hideFloatingTripleBar(); inventorySlotsUI.style.display = 'none'; itemNotification.style.display = 'none'; isDrinkingActive = false;
                 character.targetX = null; character.targetY = null; resetMovementKeys(); stepMoveTimer = 0; resetAllTimers();
+                
+                // PEMUTARAN AUDIO MINUM
                 playSfx(waterSfx);
             }
         }
@@ -2353,7 +2431,6 @@
                 hideSingleFloatingBar(); hideFloatingTripleBar(); inventorySlotsUI.style.display = 'none';
             }
 
-            // --- Perbaikan Pengecekan Peta Kolisi Aktif ---
             updateCollisionMap(currentMap === 'jalurBatu' ? colJalurBatuImg : colMapImage);
 
             if (isWalkable(nextX + (character.width / 2), nextY + character.height)) {
