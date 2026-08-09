@@ -509,9 +509,9 @@
 <body>
 
     <div class="game-container">
-        <!-- Audio BGM & SFX Eksternal -->
+        <!-- Audio BGM & SFX Eksternal (Lowercased) -->
         <audio id="exploreAudio" src="explore.mp3" preload="auto" loop></audio>
-        <audio id="battleAudio" src="Battle.mp3" preload="auto" loop></audio>
+        <audio id="battleAudio" src="battle.mp3" preload="auto" loop></audio>
         <audio id="daggerSfx" src="dagger.mp3" preload="auto"></audio>
         <audio id="slimeaSfx" src="slimea.mp3" preload="auto"></audio>
         <audio id="missSfx" src="miss.mp3" preload="auto"></audio>
@@ -835,7 +835,7 @@
 
         function openCardZoom(cardKey) {
             if (!cardCollection[cardKey]) return; // Hanya yang unlocked bisa di-zoom
-            cardZoomImg.src = `${cardKey}.png`;
+            cardZoomImg.src = `${cardKey.toLowerCase()}.png`;
             cardZoomModal.style.display = 'flex';
         }
 
@@ -866,7 +866,7 @@
 
                 if (key !== null && cardCollection[key]) {
                     slot.classList.add('unlocked');
-                    slot.innerHTML = `<img src="${key}.png" alt="${key}"><span class="card-title">${key.toUpperCase()}</span>`;
+                    slot.innerHTML = `<img src="${key.toLowerCase()}.png" alt="${key}"><span class="card-title">${key.toUpperCase()}</span>`;
                     slot.addEventListener('click', (e) => {
                         e.stopPropagation();
                         openCardZoom(key);
@@ -1193,7 +1193,7 @@
 
         function triggerGameOver() {
             isGameOver = true;
-            playSfx(gameOverSfx); // Memainkan SFX saat Game Over muncul
+            playSfx(gameOverSfx);
             searchBtnBerryM.style.display = 'none';
             searchBtnsRandom.forEach(b => b.style.display = 'none');
             searchBtnsSemak.forEach(b => b.style.display = 'none');
@@ -1236,19 +1236,19 @@
 
         function loadImg(src) {
             const img = new Image();
-            img.src = src;
+            img.src = src.toLowerCase(); // Pengaman ekstra agar selalu lowercase
             return img;
         }
 
-        const bgPagiImg  = loadImg('GUBUK-SUNYI-P.gif'); 
-        const bgSiangImg = loadImg('GUBUK-SUNYI.gif');  
-        const bgSoreImg  = loadImg('GUBUK-SUNYI-S.gif');  
-        const bgMalamImg = loadImg('GUBUK-SUNYI-M.gif'); 
-        const colMapImage = loadImg('gubuk Sunyi col.gif'); 
+        const bgPagiImg  = loadImg('gubuk-sunyi-p.gif'); 
+        const bgSiangImg = loadImg('gubuk-sunyi.gif');  
+        const bgSoreImg  = loadImg('gubuk-sunyi-s.gif');  
+        const bgMalamImg = loadImg('gubuk-sunyi-m.gif'); 
+        const colMapImage = loadImg('gubuk-sunyi-col.gif'); 
 
         const bedImg      = loadImg('bed.png');
         const bookImg     = loadImg('book.png'); 
-        const card3Img    = loadImg('card3.png'); // Gambar Nara saat perolehan card
+        const card3Img    = loadImg('card3.png');
         const airImg      = loadImg('air.png');     
         const air1Img     = loadImg('air1.png');    
         const air2Img     = loadImg('air2.png');    
@@ -1258,7 +1258,7 @@
         const semakImg    = loadImg('semakf.png'); 
 
         const slime0Img = loadImg('slime.png'), slime1Img = loadImg('slime1.png'), slime2Img = loadImg('slime2.png'), slime4Img = loadImg('slime4.png');
-        const bgJalurBatuImg = loadImg('jalur-batu.gif'), colJalurBatuImg = loadImg('JALUR-BATU-COL.gif');
+        const bgJalurBatuImg = loadImg('jalur-batu.gif'), colJalurBatuImg = loadImg('jalur-batu-col.gif');
 
         const charDefaultImg = loadImg('nara.png'), charBlinkImg = loadImg('narak.png'), charPoseFront1 = loadImg('narap.png'), charPoseFront2 = loadImg('narap1.png');
         const charWalk1Img = loadImg('naraw1.png'), charWalk2Img = loadImg('naraw2.png');
@@ -1381,24 +1381,17 @@
                 greenSlime.fadeTimer += deltaTime;
                 greenSlime.alpha = Math.max(0, 1.0 - (greenSlime.fadeTimer / 2000));
                 
-                // Setelah animasi slime4 (2000ms) hilang:
                 if (greenSlime.fadeTimer >= 2000) {
                     greenSlime.active = false; 
                     greenSlime.isDead = false;
 
-                    // Distribusi Peluang setelah Slime4 Hilang:
-                    // 1%   -> Card 35
-                    // 15%  -> Item Flower
-                    // 84%  -> Kosong
                     let randDrop = Math.random();
 
                     if (randDrop < 0.01) {
-                        // 1%: Peluang Mendapatkan Card 35
                         if (!cardCollection['card35']) {
                             triggerCardAnim('card35');
                         }
                     } else if (randDrop < 0.16) {
-                        // 15% (0.01 s/d 0.16): Mendapatkan item Flower
                         addItemToInventory('flower');
                         playSfx(dapatSfx);
                         isFlowerAnim = true; 
@@ -1408,7 +1401,6 @@
                         itemNotification.style.top = `${character.y - 15}px`;
                         itemNotification.style.display = 'flex';
                     }
-                    // 84% Sisanya (0.16 s/d 1.00): Kosong
                 }
                 return;
             }
@@ -1800,7 +1792,6 @@
             if (drinkCooldownTimer > 0) { drinkCooldownTimer -= deltaTime; if (drinkCooldownTimer <= 0) drinkCooldownTimer = 0; }
             if (slimeEncounterCooldown > 0) { slimeEncounterCooldown -= deltaTime; if (slimeEncounterCooldown <= 0) slimeEncounterCooldown = 0; }
 
-            /* PERBAIKAN: Update Notifikasi Teks di Atas Nara saat Animasi Kartu Aktif */
             if (isCardAnimActive) {
                 cardAnimTimer += deltaTime;
                 cardAnimOverlay.style.left = `${character.x + (character.width / 2)}px`;
@@ -1843,7 +1834,7 @@
                     if (slimeStunned) {
                         slimeStunAnimTimer += deltaTime;
                         if (slimeStunAnimTimer >= 400) { slimeStunAnimTimer = 0; slimeStunFrame = (slimeStunFrame === 0) ? 1 : 0; }
-                        battleSlimeImg.src = (slimeStunFrame === 0) ? 'SLIMEBSTUN1.png' : 'SLIMEBSTUN2.png';
+                        battleSlimeImg.src = (slimeStunFrame === 0) ? 'slimebstun1.png' : 'slimebstun2.png';
                     } else {
                         slimeBattleTimer += deltaTime;
                         if (slimeBattleTimer >= 600) { slimeBattleTimer = 0; slimeBattleFrame = (slimeBattleFrame + 1) % 2; battleSlimeImg.src = (slimeBattleFrame === 0) ? 'slimeb1.png' : 'slimeb2.png'; }
@@ -1910,7 +1901,7 @@
                         battleSlimeImg.style.visibility = 'visible'; isSlimeBlinking = false;
                         slimeBattleHp.current = Math.max(0, slimeBattleHp.current - 1); updateBattleHpBarsUI();
                         turnPhase = 'slime_hit_bd'; turnTimer = 0; 
-                        battleSlimeImg.src = 'SLIMEBD.png';
+                        battleSlimeImg.src = 'slimebd.png';
                         playSfx(daggerSfx); 
                     }
                 } else if (turnPhase === 'slime_hit_bd') {
@@ -2243,11 +2234,10 @@
                 itemNotification.style.left = `${character.x + (character.width / 2)}px`;
                 itemNotification.style.top = `${character.y - 15}px`;
 
-                // Pengecekan peluang 1% saat animasi item selesai (1000ms)
                 if ((isBerryAnim && berryAnimTimer >= 1000) || (isFlowerAnim && flowerAnimTimer >= 1000) || (isBubukAnim && bubukAnimTimer >= 1000)) {
-                    if (isBerryAnim) checkCardChance('card45');   // Berry3  -> Card 45 (1%)
-                    if (isFlowerAnim) checkCardChance('card40');  // Flower3 -> Card 40 (1%)
-                    if (isBubukAnim) checkCardChance('card25');   // Bubuk3  -> Card 25 (1%)
+                    if (isBerryAnim) checkCardChance('card45');   
+                    if (isFlowerAnim) checkCardChance('card40');  
+                    if (isBubukAnim) checkCardChance('card25');   
 
                     isBerryAnim = false; isFlowerAnim = false; isBubukAnim = false; itemNotification.style.display = 'none';
                 }
@@ -2598,13 +2588,12 @@
             if (battleState === 'none') {
                 let currentImg = charDefaultImg;
                 
-                // Animasi Perolehan Card: Transisi nara.png -> card3.png selama total 1000ms
                 if (isCardAnimActive) {
                     if (cardAnimTimer < 300) {
-                        currentImg = charDefaultImg; // 300ms pertama nara.png
+                        currentImg = charDefaultImg; 
                     } else {
                         if (card3Img.complete && card3Img.naturalWidth !== 0) {
-                            currentImg = card3Img; // Sisa waktu hingga 1000ms card3.png
+                            currentImg = card3Img; 
                         } else {
                             currentImg = charDefaultImg;
                         }
