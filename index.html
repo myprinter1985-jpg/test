@@ -1,0 +1,2690 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life of Nara - Full Orchestral Arrangement</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            color: #f4ecd8;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .game-container {
+            position: relative;
+            width: 1200px;
+            height: 900px;
+            box-shadow: 0 0 25px rgba(0,0,0,0.8);
+            background-color: #222;
+        }
+        canvas {
+            border: none;
+            display: block;
+            cursor: crosshair;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* --- Audio Control UI --- */
+        #audioControlUI {
+            position: absolute;
+            bottom: 22px;
+            right: 40px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, rgba(42, 31, 22, 0.85) 0%, rgba(20, 15, 10, 0.9) 100%);
+            border: 2px solid #a37c57;
+            border-radius: 15px;
+            padding: 3px 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+        #bgmToggleBtn {
+            background: none;
+            border: none;
+            color: #f4ecd8;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
+            transition: transform 0.2s ease;
+        }
+        #bgmToggleBtn:hover {
+            transform: scale(1.15);
+        }
+        #bgmVolumeSlider {
+            width: 30px;
+            accent-color: #a37c57;
+            cursor: pointer;
+        }
+
+        /* --- Tombol Spawn Slime --- */
+        #spawnSlimeBtn {
+            position: absolute;
+            top: 20px;
+            right: 265px;
+            z-index: 100;
+            background: linear-gradient(135deg, rgba(42, 31, 22, 0.85) 0%, rgba(20, 15, 10, 0.9) 100%);
+            border: 2px solid #a37c57;
+            border-radius: 10px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #a3e635;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.2s ease;
+        }
+        #spawnSlimeBtn:hover {
+            transform: scale(1.05);
+            border-color: #f4ecd8;
+        }
+
+        /* --- Tombol Tambah 4 Jam Waktu Game --- */
+        #addTimeBtn {
+            position: absolute;
+            top: 20px;
+            right: 185px;
+            z-index: 100;
+            background: linear-gradient(135deg, rgba(42, 31, 22, 0.85) 0%, rgba(20, 15, 10, 0.9) 100%);
+            border: 2px solid #a37c57;
+            border-radius: 10px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #f4ecd8;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.2s ease;
+        }
+        #addTimeBtn:hover {
+            transform: scale(1.05);
+            border-color: #f4ecd8;
+        }
+
+        /* --- Koordinat UI (Kanan Atas) --- */
+        #coordUI {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            z-index: 100;
+            background: linear-gradient(135deg, rgba(42, 31, 22, 0.85) 0%, rgba(20, 15, 10, 0.9) 100%);
+            border: 2px solid #a37c57;
+            border-radius: 10px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #f4ecd8;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        #floatingSingleBar {
+            position: absolute;
+            background: linear-gradient(135deg, rgba(38, 28, 20, 0.95) 0%, rgba(20, 15, 10, 0.98) 100%);
+            border: 2px solid #6b5238;
+            border-radius: 6px;
+            padding: 5px 8px;
+            box-sizing: border-box;
+            display: none; 
+            align-items: center;
+            gap: 6px;
+            transform: translate(-50%, -100%);
+            z-index: 50;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        .floating-single-label { font-size: 8px; font-weight: bold; width: 15px; text-align: right; }
+        .floating-single-container { width: 75px; height: 8px; background-color: rgba(10, 8, 5, 0.9); border-radius: 2px; overflow: hidden; }
+        .floating-single-fill { height: 100%; width: 100%; border-radius: 1px; transition: width 0.2s ease; }
+
+        #floatingTripleBar {
+            position: absolute;
+            background: linear-gradient(135deg, rgba(38, 28, 20, 0.95) 0%, rgba(20, 15, 10, 0.98) 100%);
+            border: 2px solid #6b5238;
+            border-radius: 6px;
+            padding: 8px 10px;
+            display: none; 
+            flex-direction: column;
+            gap: 6px;
+            z-index: 50;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            pointer-events: none; 
+        }
+        .floating-row { display: flex; align-items: center; gap: 6px; }
+        .floating-label { font-size: 8px; font-weight: bold; width: 15px; text-align: right; }
+        .floating-bar-container { width: 80px; height: 8px; background-color: rgba(10, 8, 5, 0.9); border-radius: 2px; overflow: hidden; }
+        .floating-bar-fill { height: 100%; width: 100%; border-radius: 1px; transition: width 0.2s ease; }
+
+        #floatHpFill { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+        #floatStaminaFill { background: linear-gradient(90deg, #65a30d, #a3e635); } 
+        #floatEnergyFill { background: linear-gradient(90deg, #2980b9, #3498db); }
+
+        #itemNotification {
+            position: absolute;
+            background: linear-gradient(135deg, rgba(38, 28, 20, 0.95) 0%, rgba(20, 15, 10, 0.98) 100%);
+            border: 2px solid #a37c57;
+            border-radius: 6px;
+            padding: 5px 10px;
+            display: none;
+            font-size: 11px;
+            font-weight: bold;
+            color: #a3e635;
+            transform: translate(-50%, -100%);
+            z-index: 60;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* --- Card Animasi UI (Notifikasi Teks di Atas Nara) --- */
+        #cardAnimOverlay {
+            position: absolute;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            transform: translate(-50%, -100%);
+            z-index: 65;
+            pointer-events: none;
+        }
+        #cardAnimText {
+            background: linear-gradient(135deg, rgba(38, 28, 20, 0.95) 0%, rgba(20, 15, 10, 0.98) 100%);
+            border: 2px solid #a37c57;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #f1c40f;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            white-space: nowrap;
+        }
+
+        /* --- Modal Buku Koleksi Kartu Maksimal 3 Kolom (Container Biasa, Border & Shadow) --- */
+        #cardBookModal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, rgba(38, 28, 20, 0.95) 0%, rgba(20, 15, 10, 0.98) 100%);
+            border: 3px solid #a37c57;
+            border-radius: 12px;
+            padding: 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            z-index: 200;
+            box-shadow: 0 0 25px rgba(0,0,0,0.95);
+            width: 375px;
+            box-sizing: border-box;
+        }
+        #cardBookModal h2 {
+            margin: 0 0 12px 0;
+            font-size: 15px;
+            color: #f4ecd8;
+            text-align: center;
+            border-bottom: 1px solid #a37c57;
+            padding-bottom: 5px;
+            width: 100%;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        }
+        
+        /* Grid 3 Kolom Maksimal */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+        }
+
+        /* Slot Kartu Lebih Kecil Proporsional */
+        .card-slot {
+            background: rgba(45, 27, 14, 0.85);
+            border: 2px dashed #6b5238;
+            border-radius: 6px;
+            height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            padding: 4px;
+            box-sizing: border-box;
+        }
+        .card-slot.unlocked {
+            border: 2px solid #a37c57;
+            background: rgba(35, 18, 8, 0.95);
+        }
+        .card-slot.unlocked:hover {
+            transform: scale(1.05);
+            border-color: #f1c40f;
+        }
+        .card-slot img {
+            max-width: 50px;
+            max-height: 55px;
+            object-fit: contain;
+        }
+        .card-slot .card-title {
+            font-size: 9px;
+            font-weight: bold;
+            color: #a37c57;
+            margin-top: 4px;
+            text-align: center;
+        }
+        .card-slot.unlocked .card-title {
+            color: #f1c40f;
+        }
+        #closeCardBookBtn {
+            margin-top: 12px;
+            padding: 5px 16px;
+            background: #c0392b;
+            color: #fff;
+            border: 1px solid #e74c3c;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        /* --- Modal Zoom Detail Card (400x551 px) --- */
+        #cardZoomModal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            z-index: 250;
+            background: rgba(10, 8, 5, 0.95);
+            border: 3px solid #f1c40f;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 0 35px rgba(0,0,0,0.95);
+        }
+        #cardZoomImg {
+            width: 400px;
+            height: 551px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        #closeCardZoomBtn {
+            margin-top: 12px;
+            padding: 6px 20px;
+            background: #c0392b;
+            color: #fff;
+            border: 1px solid #e74c3c;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+        }
+
+        #restBtn {
+            position: absolute;
+            bottom: 55px;
+            right: 40px;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, rgba(42, 31, 22, 0.85) 0%, rgba(20, 15, 10, 0.9) 100%);
+            border: 2px solid #a37c57;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+            outline: none;
+        }
+        #restBtn:hover { transform: scale(1.15); border-color: #f4ecd8; }
+        .rest-icon-text { font-size: 15px; font-weight: bold; color: #f4ecd8; }
+
+        #bagBtn {
+            position: absolute;
+            top: 175px; left: 65px; 
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, rgba(42, 31, 22, 0.85) 0%, rgba(20, 15, 10, 0.9) 100%);
+            border: 2px solid #a37c57;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+            outline: none;
+        }
+        #bagBtn:hover { transform: scale(1.15); border-color: #f4ecd8; }
+        .bag-icon-img { width: 26px; height: 26px; object-fit: contain; }
+
+        #titleImgUI {
+            position: absolute;
+            top: 37px; left: 206px;
+            transform: translateX(-50%);
+            width: 277px; height: 188px;
+            object-fit: contain;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #inventorySlots {
+            position: absolute;
+            top: 236px; left: 88px;
+            transform: translateX(-50%);
+            display: none; 
+            flex-direction: column; 
+            gap: 6px; 
+            z-index: 100;
+        }
+        .inv-slot {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, rgba(42, 31, 22, 0.85) 0%, rgba(20, 15, 10, 0.9) 100%);
+            border: 2px solid #a37c57;
+            border-radius: 50%; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+        }
+        .inv-slot:hover { transform: scale(1.1); border-color: #f4ecd8; }
+        .inv-icon-img { width: 28px; height: 28px; object-fit: contain; }
+        .item-count {
+            position: absolute; bottom: 0px; right: 2px;
+            background-color: rgba(20, 15, 10, 0.9);
+            color: #f4ecd8; font-size: 10px; font-weight: bold;
+            padding: 0 3px; border-radius: 3px; border: 1px solid #8c6747;
+        }
+        .slot-key-badge, .key-badge {
+            position: absolute; bottom: -3px; right: -3px;
+            background-color: #3a2b1f; color: #f4ecd8; font-size: 9px; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; border: 1px solid #8c6747;
+        }
+        .slot-key-badge { top: -2px; left: -2px; bottom: auto; right: auto; }
+
+        /* --- Battle Scene Overlay UI --- */
+        #battleOverlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; z-index: 150; opacity: 0; transition: opacity 0.4s ease-in-out;
+        }
+        #battleSceneImg { position: absolute; top: 0; left: 0; width: 1200px; height: 900px; object-fit: cover; }
+        #battleCloseBtn {
+            position: absolute; top: 40px; right: 40px; width: 40px; height: 40px;
+            background: linear-gradient(135deg, rgba(42, 31, 22, 0.9) 0%, rgba(20, 15, 10, 0.95) 100%);
+            border: 2px solid #a37c57; border-radius: 50%; color: #f4ecd8; font-size: 18px; font-weight: bold;
+            cursor: pointer; display: none; justify-content: center; align-items: center; z-index: 155; outline: none;
+        }
+        #battleSlimeImg, #battleNaraImg { position: absolute; display: none; z-index: 152; }
+        #battleSlimeImg { width: 315px; height: auto; }
+        #battleNaraImg { width: 360px; height: auto; }
+
+        .battle-hp-bar {
+            position: absolute; z-index: 158; display: none; flex-direction: column; align-items: center;
+            background: rgba(20, 15, 10, 0.8); border: 1px solid #8c6747; border-radius: 4px; padding: 3px 6px;
+        }
+        .battle-hp-text { font-size: 10px; font-weight: bold; color: #f4ecd8; margin-bottom: 2px; }
+        .battle-hp-track { width: 80px; height: 6px; background-color: rgba(10, 8, 5, 0.9); border-radius: 2px; overflow: hidden; }
+        .battle-hp-fill { height: 100%; background: linear-gradient(90deg, #c0392b, #e74c3c); width: 100%; }
+
+        #qteBtn {
+            position: absolute; z-index: 165; display: none; width: 30px; height: 30px;
+            background: rgba(42, 31, 22, 0.9); border: 2px solid #a37c57; border-radius: 50%;
+            color: #f4ecd8; font-size: 12px; font-weight: bold; justify-content: center; align-items: center;
+            transform: translate(-50%, -100%);
+        }
+        #qteMultiContainer { position: absolute; z-index: 165; display: none; gap: 4px; transform: translate(-50%, -100%); }
+        .qte-box {
+            width: 26px; height: 26px; background: rgba(42, 31, 22, 0.9); border: 2px solid #a37c57;
+            border-radius: 50%; color: #f4ecd8; font-size: 11px; font-weight: bold; display: flex;
+            justify-content: center; align-items: center;
+        }
+        #missTextOverlay { position: absolute; z-index: 166; display: none; color: #ff6b6b; font-size: 16px; font-weight: bold; transform: translate(-50%, -50%); }
+
+        #battleActionContainer {
+            position: absolute; display: none; z-index: 160; gap: 12px;
+            background: rgba(20, 15, 10, 0.6); border: 2px solid #8c6747; border-radius: 30px; padding: 8px 14px;
+            left: calc(50% + 200px - 10px); top: calc(50% + 185px); transform: translate(-50%, -50%);
+        }
+        .battle-action-btn {
+            background: rgba(255, 255, 255, 0.1); border: 2px solid #ffffff; border-radius: 50%;
+            width: 44px; height: 44px; cursor: pointer; font-size: 22px; color: #ffffff;
+            display: flex; justify-content: center; align-items: center; outline: none; padding: 0; position: relative;
+        }
+        .battle-action-btn:hover { transform: scale(1.15); background: rgba(255, 255, 255, 0.3); }
+
+        #confirmDialog {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, rgba(38, 28, 20, 0.98) 0%, rgba(20, 15, 10, 0.98) 100%);
+            border: 3px solid #a37c57; border-radius: 12px; padding: 20px 30px; display: none;
+            flex-direction: column; align-items: center; gap: 15px; z-index: 200;
+        }
+        #confirmText { font-size: 16px; font-weight: bold; color: #f4ecd8; text-align: center; }
+        .confirm-btn-group { display: flex; gap: 15px; }
+        .confirm-btn { padding: 8px 20px; font-family: 'Courier New', Courier, monospace; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; outline: none; position: relative; }
+        #confirmOkBtn { background: #27ae60; color: #ffffff; border: 1px solid #2ecc71; }
+        #confirmCancelBtn { background: #c0392b; color: #ffffff; border: 1px solid #e74c3c; }
+
+        #gameOverOverlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(10, 8, 5, 0.9); display: none; justify-content: center; align-items: center;
+            flex-direction: column; z-index: 210;
+        }
+        #gameOverOverlay h1 { font-size: 60px; color: #ff6b6b; margin-bottom: 20px; }
+        #restartBtn { padding: 12px 28px; font-size: 18px; cursor: pointer; background: #4a3b2c; color: #f4ecd8; border: 2px solid #8c6747; border-radius: 6px; font-family: 'Courier New', Courier, monospace; }
+
+        .search-popup-btn, .map-arrow-btn, .book-interact-btn {
+            position: absolute; width: 48px; height: 48px; cursor: pointer; display: none;
+            transform: translate(-50%, -50%); z-index: 10; justify-content: center; align-items: center; outline: none;
+        }
+        .search-popup-btn, .book-interact-btn {
+            background: linear-gradient(135deg, rgba(42, 31, 22, 0.85) 0%, rgba(20, 15, 10, 0.9) 100%);
+            border: 2px solid #a37c57; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+        .search-popup-btn svg { width: 22px; height: 22px; fill: #f4ecd8; }
+        .map-arrow-btn { background: none !important; border: none !important; box-shadow: none !important; }
+        .map-arrow-btn img { width: 100%; height: 100%; object-fit: contain; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <!-- Audio BGM & SFX Eksternal -->
+        <audio id="exploreAudio" src="explore.mp3" preload="auto" loop></audio>
+        <audio id="battleAudio" src="Battle.mp3" preload="auto" loop></audio>
+        <audio id="daggerSfx" src="dagger.mp3" preload="auto"></audio>
+        <audio id="slimeaSfx" src="slimea.mp3" preload="auto"></audio>
+        <audio id="missSfx" src="miss.mp3" preload="auto"></audio>
+        <audio id="dapatSfx" src="dapat.mp3" preload="auto"></audio>
+        <audio id="waterSfx" src="water.mp3" preload="auto"></audio>
+        <audio id="makanSfx" src="makan.mp3" preload="auto"></audio>
+        <audio id="winSfx" src="win.mp3" preload="auto"></audio>
+        <audio id="gameOverSfx" src="gameover.mp3" preload="auto"></audio>
+
+        <!-- Tombol Spawn Slime -->
+        <button id="spawnSlimeBtn" title="Munculkan Slime di Map">Spawn Slime</button>
+
+        <!-- Tombol Tambah +4 Jam Waktu Game -->
+        <button id="addTimeBtn" title="Tambah 4 Jam Waktu Game">+4 Jam</button>
+
+        <!-- Indikator Koordinat X & Y Nara -->
+        <div id="coordUI">X: <span id="coordX">0</span> | Y: <span id="coordY">0</span></div>
+
+        <!-- Kontrol Audio BGM UI -->
+        <div id="audioControlUI">
+            <button id="bgmToggleBtn" title="Mute / Unmute Musik BGM">🎵</button>
+            <input type="range" id="bgmVolumeSlider" min="0" max="1" step="0.05" value="0.07" title="Volume BGM">
+        </div>
+
+        <canvas id="gameCanvas" width="1200" height="900"></canvas>
+
+        <div id="itemNotification">Menemukan item</div>
+
+        <!-- Card Anim Overlay (Teks "Mendapatkan card" saja) -->
+        <div id="cardAnimOverlay">
+            <div id="cardAnimText">Mendapatkan card</div>
+        </div>
+
+        <!-- Card Book Modal Container Biasa (Border & Shadow) -->
+        <div id="cardBookModal">
+            <h2>BUKU KOLEKSI KARTU</h2>
+            <div class="card-grid" id="cardGridContainer">
+                <!-- Slot kartu akan digenerate secara dinamis lewat JavaScript -->
+            </div>
+            <button id="closeCardBookBtn">TUTUP</button>
+        </div>
+
+        <!-- Card Zoom Detail Modal (400x551 px) -->
+        <div id="cardZoomModal">
+            <img id="cardZoomImg" src="card25.png" alt="Zoom Card">
+            <button id="closeCardZoomBtn">TUTUP</button>
+        </div>
+
+        <button id="bookBtn" class="book-interact-btn" title="Buka Buku Kartu"><span class="btn-icon" style="font-size: 18px; font-weight: bold; color: #f4ecd8;">📖</span><span class="key-badge">E</span></button>
+
+        <button id="searchBtnBerryM" class="search-popup-btn" title="Cari Berry"><span class="btn-icon" style="font-size: 20px; font-weight: bold; color: #f4ecd8;">?</span><span class="key-badge">E</span></button>
+        <button id="searchBtnRandom0" class="search-popup-btn" title="Cari Acak"><span class="btn-icon" style="font-size: 20px; font-weight: bold; color: #f4ecd8;">?</span><span class="key-badge">E</span></button>
+        <button id="searchBtnRandom1" class="search-popup-btn" title="Cari Acak"><span class="btn-icon" style="font-size: 20px; font-weight: bold; color: #f4ecd8;">?</span><span class="key-badge">E</span></button>
+        <button id="searchBtnSemak0" class="search-popup-btn" title="Cari Semak"><span class="btn-icon" style="font-size: 20px; font-weight: bold; color: #f4ecd8;">?</span><span class="key-badge">E</span></button>
+        <button id="searchBtnSemak1" class="search-popup-btn" title="Cari Semak"><span class="btn-icon" style="font-size: 20px; font-weight: bold; color: #f4ecd8;">?</span><span class="key-badge">E</span></button>
+
+        <button id="transitionBtn" class="map-arrow-btn" title="Masuk Jalur Batu"><img src="arrowbawah.png" alt="Masuk Jalur Batu"><span class="key-badge">E</span></button>
+        <button id="returnBtn" class="map-arrow-btn" title="Keluar"><img src="arrowatas.png" alt="Keluar"><span class="key-badge">E</span></button>
+
+        <button id="restBtn" title="Rest (Tekan Z)"><span class="rest-icon-text">Zzz</span><span class="key-badge">Z</span></button>
+
+        <img id="titleImgUI" src="judul.png" alt="Judul" draggable="false">
+
+        <button id="bagBtn" title="Tas / Inventory (Tekan I)"><img src="tas.png" alt="Tas" class="bag-icon-img"><span class="key-badge">I</span></button>
+
+        <div id="inventorySlots"></div>
+
+        <div id="floatingSingleBar" style="display: none;">
+            <span class="floating-single-label" id="floatLabel">ST</span>
+            <div class="floating-single-container"><div id="floatFill" class="floating-single-fill" style="width: 100%;"></div></div>
+        </div>
+
+        <div id="floatingTripleBar">
+            <div class="floating-row"><span class="floating-label" style="color:#ff6b6b;">HP</span><div class="floating-bar-container"><div id="floatHpFill" class="floating-bar-fill" style="width: 100%;"></div></div></div>
+            <div class="floating-row"><span class="floating-label" style="color:#a3e635;">ST</span><div class="floating-bar-container"><div id="floatStaminaFill" class="floating-bar-fill" style="width: 100%;"></div></div></div>
+            <div class="floating-row"><span class="floating-label" style="color:#5bc0de;">EN</span><div class="floating-bar-container"><div id="floatEnergyFill" class="floating-bar-fill" style="width: 100%;"></div></div></div>
+        </div>
+
+        <!-- Battle Scene Overlay UI -->
+        <div id="battleOverlay">
+            <img id="battleSceneImg" src="bs0.gif" alt="Battle Scene">
+            <img id="battleSlimeImg" src="slimeb1.png" alt="Slime Battle">
+            <img id="battleNaraImg" src="narabi.png" alt="Nara Battle">
+
+            <div id="slimeHpBar" class="battle-hp-bar">
+                <span class="battle-hp-text" id="slimeHpText">SLIME (2/2)</span>
+                <div class="battle-hp-track"><div id="slimeHpFill" class="battle-hp-fill"></div></div>
+            </div>
+
+            <div id="qteBtn">W</div>
+            <div id="qteMultiContainer"></div>
+            <div id="missTextOverlay">MISS</div>
+
+            <div id="naraHpBar" class="battle-hp-bar">
+                <span class="battle-hp-text" id="naraHpText">NARA (7/7)</span>
+                <div class="battle-hp-track"><div id="naraHpFill" class="battle-hp-fill"></div></div>
+            </div>
+            
+            <div id="battleActionContainer">
+                <button class="battle-action-btn" id="btnAttack" title="Serang">🗡<span class="key-badge">A</span></button>
+                <button class="battle-action-btn" id="btnDefend" title="Bertahan">🛡<span class="key-badge">S</span></button>
+                <button class="battle-action-btn" id="btnRun" title="Kabur">🏃‍♀️<span class="key-badge">D</span></button>
+            </div>
+
+            <button id="battleCloseBtn">X</button>
+        </div>
+
+        <div id="confirmDialog">
+            <div id="confirmText">Lakukan aksi ini?</div>
+            <div class="confirm-btn-group">
+                <button class="confirm-btn" id="confirmOkBtn">OKE<span class="key-badge">E</span></button>
+                <button class="confirm-btn" id="confirmCancelBtn">CANCEL<span class="key-badge">Space</span></button>
+            </div>
+        </div>
+
+        <div id="gameOverOverlay">
+            <img id="gameOverNaraImg" src="narabk1.png" alt="Nara Defeated" style="width: 400px; height: auto; margin-bottom: 15px; display: none;">
+            <h1>GAME OVER</h1>
+            <button id="restartBtn">ULANGI</button>
+        </div>
+    </div>
+
+    <script>
+        const exploreAudio = document.getElementById('exploreAudio');
+        const battleAudio = document.getElementById('battleAudio');
+        const daggerSfx = document.getElementById('daggerSfx');
+        const slimeaSfx = document.getElementById('slimeaSfx');
+        const missSfx = document.getElementById('missSfx');
+        const dapatSfx = document.getElementById('dapatSfx');
+        const waterSfx = document.getElementById('waterSfx');
+        const makanSfx = document.getElementById('makanSfx');
+        const winSfx = document.getElementById('winSfx');
+        const gameOverSfx = document.getElementById('gameOverSfx');
+
+        const bgmToggleBtn = document.getElementById('bgmToggleBtn');
+        const bgmVolumeSlider = document.getElementById('bgmVolumeSlider');
+        let isAudioMuted = false;
+        let isBattleAudioActive = false;
+
+        exploreAudio.volume = parseFloat(bgmVolumeSlider.value);
+        battleAudio.volume = parseFloat(bgmVolumeSlider.value);
+        daggerSfx.volume = 0.3;
+        slimeaSfx.volume = 0.4;
+        missSfx.volume = 0.4;
+        dapatSfx.volume = 0.3;
+        waterSfx.volume = 0.4;
+        makanSfx.volume = 0.4;
+        winSfx.volume = 0.5;
+        gameOverSfx.volume = 0.5;
+
+        function playSfx(sfxElement) {
+            if (isAudioMuted) return;
+            sfxElement.currentTime = 0;
+            sfxElement.play().catch(e => { console.log("SFX play dicegah browser."); });
+        }
+
+        function playExploreBGM() {
+            if (isAudioMuted) return;
+            battleAudio.pause(); battleAudio.currentTime = 0; isBattleAudioActive = false;
+            exploreAudio.play().catch(e => {}); bgmToggleBtn.textContent = '🎵';
+        }
+
+        function playBattleBGM() {
+            if (isAudioMuted) return;
+            exploreAudio.pause(); exploreAudio.currentTime = 0; isBattleAudioActive = true;
+            battleAudio.play().catch(e => {}); bgmToggleBtn.textContent = '🎵';
+        }
+
+        function stopAllBGM() {
+            exploreAudio.pause(); battleAudio.pause(); bgmToggleBtn.textContent = '🔇';
+        }
+
+        bgmToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isAudioMuted = !isAudioMuted;
+            if (isAudioMuted) stopAllBGM();
+            else { if (battleState !== 'none') playBattleBGM(); else playExploreBGM(); }
+        });
+
+        bgmVolumeSlider.addEventListener('input', (e) => { 
+            let vol = parseFloat(e.target.value);
+            exploreAudio.volume = vol; battleAudio.volume = vol;
+            daggerSfx.volume = vol; slimeaSfx.volume = vol; missSfx.volume = vol;
+            dapatSfx.volume = vol; waterSfx.volume = vol; makanSfx.volume = vol; winSfx.volume = vol;
+            gameOverSfx.volume = vol;
+        });
+
+        function checkMapBGM() {
+            if (!isAudioMuted) { if (battleState !== 'none') playBattleBGM(); else playExploreBGM(); }
+        }
+
+        function initAudioOnFirstUserInteraction() {
+            checkMapBGM();
+            window.removeEventListener('click', initAudioOnFirstUserInteraction);
+            window.removeEventListener('keydown', initAudioOnFirstUserInteraction);
+        }
+        window.addEventListener('click', initAudioOnFirstUserInteraction);
+        window.addEventListener('keydown', initAudioOnFirstUserInteraction);
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Offscreen Canvas khusus untuk Transisi Mosaik Tajam ---
+        const offCanvas = document.createElement('canvas');
+        const offCtx = offCanvas.getContext('2d');
+        offCanvas.width = 1200;
+        offCanvas.height = 900;
+
+        const floatingSingleBar = document.getElementById('floatingSingleBar');
+        const floatLabel = document.getElementById('floatLabel');
+        const floatFill = document.getElementById('floatFill');
+
+        const floatingTripleBar = document.getElementById('floatingTripleBar');
+        const floatHpFill = document.getElementById('floatHpFill');
+        const floatStaminaFill = document.getElementById('floatStaminaFill');
+        const floatEnergyFill = document.getElementById('floatEnergyFill');
+
+        const itemNotification = document.getElementById('itemNotification');
+        const cardAnimOverlay = document.getElementById('cardAnimOverlay');
+        const cardBookModal = document.getElementById('cardBookModal');
+        const cardGridContainer = document.getElementById('cardGridContainer');
+        const closeCardBookBtn = document.getElementById('closeCardBookBtn');
+        const bookBtn = document.getElementById('bookBtn');
+
+        const cardZoomModal = document.getElementById('cardZoomModal');
+        const cardZoomImg = document.getElementById('cardZoomImg');
+        const closeCardZoomBtn = document.getElementById('closeCardZoomBtn');
+
+        const restBtn = document.getElementById('restBtn');
+        const bagBtn = document.getElementById('bagBtn');
+        const inventorySlotsUI = document.getElementById('inventorySlots');
+
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        const gameOverNaraImg = document.getElementById('gameOverNaraImg');
+        const restartBtn = document.getElementById('restartBtn');
+
+        const searchBtnBerryM = document.getElementById('searchBtnBerryM');
+        const searchBtnsRandom = [document.getElementById('searchBtnRandom0'), document.getElementById('searchBtnRandom1')];
+        const searchBtnsSemak = [document.getElementById('searchBtnSemak0'), document.getElementById('searchBtnSemak1')];
+
+        const transitionBtn = document.getElementById('transitionBtn');
+        const returnBtn = document.getElementById('returnBtn');
+
+        const addTimeBtn = document.getElementById('addTimeBtn');
+        addTimeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            gameTimeMinutes += 240; 
+            if (gameTimeMinutes >= 24 * 60) gameTimeMinutes -= 24 * 60;
+        });
+
+        /* --- Event Listener Tombol Spawn Slime --- */
+        const spawnSlimeBtn = document.getElementById('spawnSlimeBtn');
+        spawnSlimeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            forceSpawnGreenSlime();
+        });
+
+        const battleOverlay = document.getElementById('battleOverlay');
+        const battleSceneImg = document.getElementById('battleSceneImg');
+        const battleSlimeImg = document.getElementById('battleSlimeImg');
+        const battleNaraImg = document.getElementById('battleNaraImg');
+        const battleCloseBtn = document.getElementById('battleCloseBtn');
+        const battleActionContainer = document.getElementById('battleActionContainer');
+
+        const slimeHpBar = document.getElementById('slimeHpBar');
+        const slimeHpText = document.getElementById('slimeHpText');
+        const slimeHpFill = document.getElementById('slimeHpFill');
+        const qteBtn = document.getElementById('qteBtn');
+        const qteMultiContainer = document.getElementById('qteMultiContainer');
+        const missTextOverlay = document.getElementById('missTextOverlay');
+
+        const naraHpBar = document.getElementById('naraHpBar');
+        const naraHpText = document.getElementById('naraHpText');
+        const naraHpFill = document.getElementById('naraHpFill');
+
+        const confirmDialog = document.getElementById('confirmDialog');
+        const confirmText = document.getElementById('confirmText');
+        const confirmOkBtn = document.getElementById('confirmOkBtn');
+        const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+
+        const coordXSpan = document.getElementById('coordX');
+        const coordYSpan = document.getElementById('coordY');
+
+        /* --- SISTEM CARD COLLECTION MAKSIMAL 3 ITEM & ZOOM --- */
+        let cardCollection = {
+            card25: false,
+            card30: false,
+            card35: false,
+            card40: false,
+            card45: false,
+            card50: false,
+            card55: false,
+            card60: false
+        };
+        let isCardAnimActive = false;
+        let cardAnimTimer = 0;
+
+        function triggerCardAnim(cardKey) {
+            if (cardCollection[cardKey]) return; // Kartu hanya bisa didapatkan 1x
+            cardCollection[cardKey] = true;
+            updateCardBookUI();
+
+            playSfx(dapatSfx);
+            isCardAnimActive = true;
+            cardAnimTimer = 0;
+            
+            // Posisikan dan tampilkan notifikasi teks di atas kepala Nara
+            cardAnimOverlay.style.left = `${character.x + (character.width / 2)}px`;
+            cardAnimOverlay.style.top = `${character.y - 15}px`;
+            cardAnimOverlay.style.display = 'flex';
+        }
+
+        // Pengecekan peluang perolehan kartu dengan rate 1%
+        function checkCardChance(cardKey) {
+            if (cardCollection[cardKey]) return;
+
+            if (Math.random() < 0.01) { // Chance 1%
+                triggerCardAnim(cardKey);
+            }
+        }
+
+        function openCardZoom(cardKey) {
+            if (!cardCollection[cardKey]) return; // Hanya yang unlocked bisa di-zoom
+            cardZoomImg.src = `${cardKey}.png`;
+            cardZoomModal.style.display = 'flex';
+        }
+
+        closeCardZoomBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            cardZoomModal.style.display = 'none';
+        });
+
+        function updateCardBookUI() {
+            cardGridContainer.innerHTML = '';
+            
+            // Ambil daftar kartu yang sudah dikoleksi (unlocked)
+            const allCards = ['card25', 'card30', 'card35', 'card40', 'card45', 'card50', 'card55', 'card60'];
+            const unlockedCards = allCards.filter(key => cardCollection[key]);
+
+            // Selalu tampilkan minimal 1 slot kosong (placeholder / kartu yang belum didapat pertama)
+            // Ditambah jumlah kartu yang sudah didapat (unlocked), maksimal total 3 slot (1 kosong + 2 unlocked)
+            let slotsToDisplay = [null]; // 1 slot kosong awal
+            unlockedCards.forEach(key => {
+                if (slotsToDisplay.length < 3) {
+                    slotsToDisplay.push(key);
+                }
+            });
+
+            slotsToDisplay.forEach((key, index) => {
+                const slot = document.createElement('div');
+                slot.className = 'card-slot';
+
+                if (key !== null && cardCollection[key]) {
+                    slot.classList.add('unlocked');
+                    slot.innerHTML = `<img src="${key}.png" alt="${key}"><span class="card-title">${key.toUpperCase()}</span>`;
+                    slot.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openCardZoom(key);
+                    });
+                } else {
+                    slot.classList.remove('unlocked');
+                    slot.innerHTML = `<span class="card-title">EMPTY</span>`;
+                }
+                cardGridContainer.appendChild(slot);
+            });
+        }
+
+        function openCardBook() {
+            updateCardBookUI();
+            cardBookModal.style.display = 'flex';
+        }
+
+        closeCardBookBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            cardBookModal.style.display = 'none';
+            cardZoomModal.style.display = 'none';
+        });
+
+        bookBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openCardBook();
+        });
+
+        let pendingActionCallback = null;
+
+        function showConfirmDialog(message, onConfirm) {
+            confirmText.textContent = message;
+            pendingActionCallback = onConfirm;
+            confirmDialog.style.display = 'flex';
+        }
+
+        confirmOkBtn.addEventListener('click', () => {
+            confirmDialog.style.display = 'none';
+            if (pendingActionCallback) pendingActionCallback();
+            pendingActionCallback = null;
+        });
+
+        confirmCancelBtn.addEventListener('click', () => {
+            confirmDialog.style.display = 'none';
+            pendingActionCallback = null;
+        });
+
+        function getRandomQTEKey() {
+            let keysArr = (stats.energy.current <= 5) ? ['W', 'S', 'D', 'A'] : ['D', 'A'];
+            return keysArr[Math.floor(Math.random() * keysArr.length)];
+        }
+
+        document.getElementById('btnAttack').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (turnPhase === 'idle' && confirmDialog.style.display !== 'flex') {
+                showConfirmDialog("Gunakan Serangan (🗡)?", () => {
+                    turnPhase = 'nara_forward'; turnTimer = 0; naraWalkAnimTimer = 0; naraWalkFrame = 0; battleActionContainer.style.display = 'none';
+                });
+            }
+        });
+
+        document.getElementById('btnDefend').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (turnPhase === 'idle' && confirmDialog.style.display !== 'flex') {
+                showConfirmDialog("Gunakan Bertahan (🛡)?", () => {
+                    turnPhase = 'defend_nara_anim'; turnTimer = 0; battleActionContainer.style.display = 'none';
+                });
+            }
+        });
+
+        document.getElementById('btnRun').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (turnPhase === 'idle' && confirmDialog.style.display !== 'flex') {
+                showConfirmDialog("Mencoba Lari dari Pertarungan (🏃‍♀️)?", () => {
+                    modifyStat('energy', -1);
+                    turnPhase = 'run_qte_prep'; turnTimer = 0; battleActionContainer.style.display = 'none'; runBlinkTimer = 0; runBlinkFrame = 0;
+                });
+            }
+        });
+
+        let stats = {
+            hp: { current: 7, max: 7 },
+            stamina: { current: 10, max: 10 },
+            energy: { current: 10, max: 10 }
+        };
+
+        let slimeBattleHp = { current: 2, max: 2 };
+        let gameTimeMinutes = 6 * 60; 
+        let energyLossAccumulator = 0;
+        let inventory = [null, null, null];
+
+        let isGameOver = false;
+        let isSingleBarVisible = false;
+        let singleBarTimer = 0;
+        let searchCooldownTimer = 0;
+
+        let isResting = false;
+        let restTimer = 0, restStaminaTimer = 0, restEnergyTimer = 0, restSeqIndex = 0;
+        const restSequence = [
+            { imgKey: 'sit',   duration: 4000 }, { imgKey: 'sit1',  duration: 500  }, 
+            { imgKey: 'sit',   duration: 1000 }, { imgKey: 'sit',   duration: 4000 }, 
+            { imgKey: 'sit1',  duration: 500  }, { imgKey: 'sit',   duration: 2000 }, 
+            { imgKey: 'sit1',  duration: 3000 }, { imgKey: 'sit2',  duration: 1000 }, 
+            { imgKey: 'sit3',  duration: 1000 }, { imgKey: 'sit4',  duration: 200  }  
+        ];
+
+        let isEating = false, eatStep = 0, eatTimer = 0, currentEatingItem = 'berry';
+        let isFlowerCrafting = false, flowerCraftStep = 0, flowerCraftTimer = 0, flowerCraftResult = 'success'; 
+        let isBubukAnim = false, bubukAnimTimer = 0;
+
+        let isMapWalking = false, mapWalkPhase = 0, mapWalkTargetY = 0, mapWalkTargetMap = '', mapWalkAnimTimer = 0, mapWalkDirection = 'keluar'; 
+        
+        /* --- Variabel Mosaic / Pixelate Transition --- */
+        let mosaicFactor = 1; 
+        let mosaicPhase = 'none'; 
+        let mosaicTimer = 0;
+
+        function startMosaicTransition(onMidpoint) {
+            mosaicPhase = 'in';
+            mosaicTimer = 0;
+            mosaicFactor = 1;
+            window.mosaicCallback = onMidpoint;
+        }
+
+        function updateMosaicTransition(deltaTime) {
+            if (mosaicPhase === 'none') return;
+            mosaicTimer += deltaTime;
+            
+            const transitionDuration = 350;
+
+            if (mosaicPhase === 'in') {
+                let progress = Math.min(1, mosaicTimer / transitionDuration);
+                mosaicFactor = 1 + progress * 49;
+                if (progress >= 1) {
+                    if (window.mosaicCallback) {
+                        window.mosaicCallback();
+                        window.mosaicCallback = null;
+                    }
+                    mosaicPhase = 'out';
+                    mosaicTimer = 0;
+                }
+            } else if (mosaicPhase === 'out') {
+                let progress = Math.min(1, mosaicTimer / transitionDuration);
+                mosaicFactor = 50 - progress * 49;
+                if (progress >= 1) {
+                    mosaicFactor = 1;
+                    mosaicPhase = 'none';
+                }
+            }
+        }
+
+        const bedPos = { x: 642, y: 416 };
+        const batuAirPos = { x: bedPos.x - 118, y: bedPos.y - 30 };
+        const bookPos = { x: bedPos.x - -55, y: bedPos.y - 5 }; 
+
+        let waterDropState = 'falling', waterDropOffsetY = 0, splashTimer = 0, waterCooldownTimer = 0;
+
+        function updateWaterDrop(deltaTime) {
+            if (currentMap !== 'jalurBatu') return;
+            if (waterDropState === 'falling') {
+                waterDropOffsetY += (300 * deltaTime) / 1000;
+                if (waterDropOffsetY >= 140) { waterDropOffsetY = 140; waterDropState = 'splash'; splashTimer = 0; }
+            } else if (waterDropState === 'splash') {
+                splashTimer += deltaTime;
+                if (splashTimer >= 300) { waterDropState = 'cooldown'; waterCooldownTimer = 0; }
+            } else if (waterDropState === 'cooldown') {
+                waterCooldownTimer += deltaTime;
+                if (waterCooldownTimer >= 5000) { waterDropState = 'falling'; waterDropOffsetY = 0; }
+            }
+        }
+
+        let canDrink = false, isDrinkingActive = false, isDrinkingAnim = false, drinkStep = 0, drinkTimer = 0, drinkCooldownTimer = 0; 
+        let waterFadeAlpha = 1.0, isWaterFading = false, waterFadeTimer = 0;
+        let waterTransitionAlpha = 1.0, isWaterTransitioning = false, waterTransitionTimer = 0;
+        let isBookActive = false;
+
+        function checkDrinkChanceOnMapEnter() {
+            canDrink = (drinkCooldownTimer <= 0 && Math.random() < 0.10);
+            isWaterFading = false; waterFadeAlpha = 1.0;
+            isWaterTransitioning = false; waterTransitionAlpha = 1.0;
+        }
+
+        let isBedActive = false, isBedSleeping = false, bedSleepPhase = 1, bedSleepTimer = 0, bedPhase3SubTimer = 0, bedPhase3SubStep = 0, bedTextCooldownTimer = 0; 
+        let currentMap = 'jalurBatu', currentSearchResult = 'zonk';
+
+        let battleState = 'none', battleAnimTimer = 0, battleAnimStep = 0, slimeBattleTimer = 0, slimeBattleFrame = 0, naraBattleTimer = 0, naraBattleFrame = 0;
+        let slimeEncounterCooldown = 0, battleSpawnedFromSearch = false;
+
+        const naraStartOffsetX = 150; 
+        let naraCurrentOffsetX = naraStartOffsetX;
+        const slimeStartOffsetLeft = -150;
+        let slimeCurrentOffsetLeft = slimeStartOffsetLeft;
+
+        let turnPhase = 'idle', turnTimer = 0, naraWalkAnimTimer = 0, naraWalkFrame = 0, naraAttackFrame = 0, naraAttackAnimTimer = 0, isSlimeBlinking = false;
+        let qteActive = false, qteTargetKey = '', qteSuccess = false, slimeMissTimer = 0, slimeStunned = false, slimeStunFrame = 0, slimeStunAnimTimer = 0;
+        let qteRunActive = false, qteRunKeys = [], qteRunCurrentIndex = 0, runBlinkTimer = 0, runBlinkFrame = 0;
+
+        let berryM = { x: 663, y: 300, width: 120, height: 97, active: false };
+
+        function checkBerryMSpawn() {
+            berryM.active = (Math.random() < 0.05);
+        }
+
+        function updateBattleHpBarsUI() {
+            slimeHpText.textContent = `SLIME (${slimeBattleHp.current}/${slimeBattleHp.max})`;
+            slimeHpFill.style.width = `${Math.max(0, (slimeBattleHp.current / slimeBattleHp.max) * 100)}%`;
+            naraHpText.textContent = `NARA (${stats.hp.current}/${stats.hp.max})`;
+            naraHpFill.style.width = `${Math.max(0, (stats.hp.current / stats.hp.max) * 100)}%`;
+        }
+
+        function renderMultiQTE() {
+            qteMultiContainer.innerHTML = '';
+            for (let i = 0; i < qteRunKeys.length; i++) {
+                let box = document.createElement('div');
+                box.className = 'qte-box';
+                box.textContent = qteRunKeys[i];
+                if (i < qteRunCurrentIndex) { box.style.background = '#27ae60'; box.style.borderColor = '#2ecc71'; }
+                qteMultiContainer.appendChild(box);
+            }
+            qteMultiContainer.style.display = 'flex';
+        }
+
+        function addItemToInventory(itemName, count = 1) {
+            let found = inventory.find(i => i && i.item === itemName);
+            if (found) found.count += count;
+            else {
+                let emptyIndex = inventory.findIndex(i => i === null);
+                if (emptyIndex !== -1) inventory[emptyIndex] = { item: itemName, count: count };
+            }
+            updateInventoryUI();
+        }
+
+        function useItemInSlot(slotIndex) {
+            if (slotIndex < 0 || slotIndex >= 3) return;
+            let slotData = inventory[slotIndex];
+            if (!slotData || isGameOver || isEating || isResting || isSearching || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+
+            if (slotData.item === 'berry' || slotData.item === 'bubukMisterius') {
+                slotData.count--;
+                if (slotData.count <= 0) inventory[slotIndex] = null;
+                updateInventoryUI();
+                inventorySlotsUI.style.display = 'none';
+                currentEatingItem = slotData.item;
+                isEating = true; eatStep = 0; eatTimer = 0;
+                playSfx(makanSfx);
+            } else if (slotData.item === 'flower') {
+                slotData.count--;
+                if (slotData.count <= 0) inventory[slotIndex] = null;
+                updateInventoryUI();
+                inventorySlotsUI.style.display = 'none';
+                isFlowerCrafting = true; flowerCraftStep = 0; flowerCraftTimer = 0;
+            }
+        }
+
+        function updateInventoryUI() {
+            inventorySlotsUI.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'inv-slot';
+                const keyBadge = document.createElement('span');
+                keyBadge.className = 'slot-key-badge';
+                keyBadge.textContent = (i + 1);
+                slotDiv.appendChild(keyBadge);
+
+                let slotData = inventory[i];
+                if (slotData) {
+                    slotDiv.style.opacity = '1';
+                    let iconSrc = slotData.item === 'berry' ? 'berryic.png' : slotData.item === 'flower' ? 'floweric.png' : 'bubuk.png';
+                    slotDiv.innerHTML += `<img src="${iconSrc}" class="inv-icon-img" alt="Item"><span class="item-count">${slotData.count}</span>`;
+                    slotDiv.addEventListener('click', (e) => { e.stopPropagation(); useItemInSlot(i); });
+                } else {
+                    slotDiv.style.opacity = '0.4';
+                }
+                inventorySlotsUI.appendChild(slotDiv);
+            }
+        }
+
+        function toggleInventory() {
+            if (inventorySlotsUI.style.display === 'flex') inventorySlotsUI.style.display = 'none';
+            else { updateInventoryUI(); inventorySlotsUI.style.display = 'flex'; }
+        }
+
+        bagBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleInventory(); });
+        document.addEventListener('click', (e) => {
+            if (!inventorySlotsUI.contains(e.target) && e.target !== bagBtn && !bagBtn.contains(e.target)) inventorySlotsUI.style.display = 'none';
+        });
+
+        function showSingleFloatingBar(statName, customDuration = 2000) {
+            let labelText = statName === 'hp' ? 'HP' : statName === 'stamina' ? 'ST' : 'EN';
+            floatLabel.textContent = labelText;
+            floatLabel.style.color = statName === 'hp' ? '#ff6b6b' : statName === 'stamina' ? '#a3e635' : '#5bc0de';
+            floatFill.style.background = statName === 'hp' ? 'linear-gradient(90deg, #c0392b, #e74c3c)' : statName === 'stamina' ? 'linear-gradient(90deg, #65a30d, #a3e635)' : 'linear-gradient(90deg, #2980b9, #3498db)';
+            floatFill.style.width = `${(stats[statName].current / stats[statName].max) * 100}%`;
+
+            floatingSingleBar.style.left = `${character.x + (character.width / 2)}px`;
+            floatingSingleBar.style.top = `${character.y - 10}px`;
+            isSingleBarVisible = true; singleBarTimer = customDuration;
+            floatingSingleBar.style.display = 'flex';
+        }
+
+        function hideSingleFloatingBar() { isSingleBarVisible = false; floatingSingleBar.style.display = 'none'; }
+
+        function showTripleFloatingBar() {
+            floatHpFill.style.width = `${(stats.hp.current / stats.hp.max) * 100}%`;
+            floatStaminaFill.style.width = `${(stats.stamina.current / stats.stamina.max) * 100}%`;
+            floatEnergyFill.style.width = `${(stats.energy.current / stats.energy.max) * 100}%`;
+
+            let naraRightX = character.x + character.width + 10;
+            if (naraRightX + 110 > 1200) naraRightX = character.x - 110 - 10;
+            floatingTripleBar.style.left = `${naraRightX}px`;
+            floatingTripleBar.style.top = `${character.y + (character.height / 2) - 30}px`;
+            floatingTripleBar.style.display = 'flex';
+        }
+
+        function hideFloatingTripleBar() { floatingTripleBar.style.display = 'none'; }
+
+        function modifyStat(statName, amount, showBar = true) {
+            let oldVal = stats[statName].current;
+            stats[statName].current = Math.max(0, Math.min(stats[statName].max, stats[statName].current + amount));
+            if (stats[statName].current !== oldVal && showBar) showSingleFloatingBar(statName);
+            updateBattleHpBarsUI();
+            if (stats.hp.current <= 0) triggerGameOver();
+        }
+
+        function triggerGameOver() {
+            isGameOver = true;
+            playSfx(gameOverSfx); // Memainkan SFX saat Game Over muncul
+            searchBtnBerryM.style.display = 'none';
+            searchBtnsRandom.forEach(b => b.style.display = 'none');
+            searchBtnsSemak.forEach(b => b.style.display = 'none');
+            transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
+            restBtn.style.display = 'none'; bagBtn.style.display = 'none';
+            inventorySlotsUI.style.display = 'none'; hideSingleFloatingBar(); hideFloatingTripleBar();
+            itemNotification.style.display = 'none'; cardAnimOverlay.style.display = 'none'; cardBookModal.style.display = 'none'; cardZoomModal.style.display = 'none';
+            battleActionContainer.style.display = 'none';
+            slimeHpBar.style.display = 'none'; naraHpBar.style.display = 'none';
+            qteBtn.style.display = 'none'; qteMultiContainer.style.display = 'none'; missTextOverlay.style.display = 'none';
+            confirmDialog.style.display = 'none'; battleState = 'none';
+
+            gameOverNaraImg.src = 'narabk1.png';
+            gameOverNaraImg.style.display = 'block';
+            gameOverOverlay.style.display = 'flex';
+            setTimeout(() => { if (isGameOver) gameOverNaraImg.src = 'narabp2.png'; }, 1000);
+        }
+
+        restartBtn.addEventListener('click', () => {
+            stats.hp.current = 7; stats.stamina.current = 10; stats.energy.current = 10;
+            slimeBattleHp.current = 2; gameTimeMinutes = 6 * 60; energyLossAccumulator = 0;
+            inventory = [null, null, null]; updateInventoryUI();
+            isGameOver = false; searchCooldownTimer = 0; bedTextCooldownTimer = 0; drinkCooldownTimer = 0;
+            slimeEncounterCooldown = 0; battleSpawnedFromSearch = false;
+            isResting = false; isEating = false; isBerryAnim = false; isFlowerAnim = false; isBubukAnim = false;
+            isFlowerCrafting = false; isBedSleeping = false; isMapWalking = false; isDrinkingAnim = false;
+            cardAnimOverlay.style.display = 'none'; cardBookModal.style.display = 'none'; cardZoomModal.style.display = 'none'; isCardAnimActive = false;
+            battleState = 'none'; turnPhase = 'idle'; battleOverlay.style.display = 'none';
+            battleActionContainer.style.display = 'none'; slimeHpBar.style.display = 'none'; naraHpBar.style.display = 'none';
+            qteBtn.style.display = 'none'; qteMultiContainer.style.display = 'none'; missTextOverlay.style.display = 'none';
+            confirmDialog.style.display = 'none'; restBtn.style.display = 'flex'; bagBtn.style.display = 'flex';
+
+            currentMap = 'jalurBatu'; updateCollisionMap(colJalurBatuImg);
+            character.x = 530; character.y = 416;
+            checkDrinkChanceOnMapEnter();
+            checkMapBGM();
+            itemNotification.style.display = 'none'; gameOverNaraImg.style.display = 'none'; gameOverOverlay.style.display = 'none';
+            initAllSearchPoints();
+        });
+
+        function loadImg(src) {
+            const img = new Image();
+            img.src = src;
+            return img;
+        }
+
+        const bgPagiImg  = loadImg('GUBUK-SUNYI-P.gif'); 
+        const bgSiangImg = loadImg('GUBUK-SUNYI.gif');  
+        const bgSoreImg  = loadImg('GUBUK-SUNYI-S.gif');  
+        const bgMalamImg = loadImg('GUBUK-SUNYI-M.gif'); 
+        const colMapImage = loadImg('gubuk Sunyi col.gif'); 
+
+        const bedImg      = loadImg('bed.png');
+        const bookImg     = loadImg('book.png'); 
+        const card3Img    = loadImg('card3.png'); // Gambar Nara saat perolehan card
+        const airImg      = loadImg('air.png');     
+        const air1Img     = loadImg('air1.png');    
+        const air2Img     = loadImg('air2.png');    
+        const air3Img     = loadImg('air3.png');
+        const air4Img     = loadImg('air4.png');
+        const minumImg    = loadImg('minum.png');
+        const semakImg    = loadImg('semakf.png'); 
+
+        const slime0Img = loadImg('slime.png'), slime1Img = loadImg('slime1.png'), slime2Img = loadImg('slime2.png'), slime4Img = loadImg('slime4.png');
+        const bgJalurBatuImg = loadImg('jalur-batu.gif'), colJalurBatuImg = loadImg('JALUR-BATU-COL.gif');
+
+        const charDefaultImg = loadImg('nara.png'), charBlinkImg = loadImg('narak.png'), charPoseFront1 = loadImg('narap.png'), charPoseFront2 = loadImg('narap1.png');
+        const charWalk1Img = loadImg('naraw1.png'), charWalk2Img = loadImg('naraw2.png');
+        const charBack0Img = loadImg('narawb1.png'), charBack1Img = loadImg('narawb2.png'), charBack2Img = loadImg('narawb.png');
+        const charRight0Img = loadImg('narawr1.png'), charRight1Img = loadImg('narawr2.png'), charRight2Img = loadImg('narawr3.png'), charRightIdle = loadImg('narawr.png');
+        const charLeft0Img = loadImg('narawl1.png'), charLeft1Img = loadImg('narawl2.png'), charLeft2Img = loadImg('narawl3.png'), charLeftIdle = loadImg('narawl.png');
+        const poseNarabp = loadImg('narabp.png'), poseNarabp1 = loadImg('narabp1.png');
+
+        const cariImg = loadImg('cari.png'), caribImg = loadImg('carib.png'), cari1Img = loadImg('cari1.png'), cari2Img = loadImg('cari2.png'), cari3Img = loadImg('cari3.png'), cari4Img = loadImg('cari4.png'), cari5Img = loadImg('cari5.png'), cari6Img = loadImg('cari6.png'), cari7Img = loadImg('cari7.png'), cari8Img = loadImg('cari8.png'), cari9Img = loadImg('cari9.png');
+        const sitImg = loadImg('sit.png'), sit1Img = loadImg('sit1.png'), sit2Img = loadImg('sit2.png'), sit3Img = loadImg('sit3.png'), sit4Img = loadImg('sit4.png'), sit5Img = loadImg('sit5.png'), sit6Img = loadImg('sit6.png'), sit7Img = loadImg('sit7.png');
+        const berryImg = loadImg('berry.png'), berryMImg = loadImg('berrym.png'), berry1Img = loadImg('berry1.png'), berry3Img = loadImg('berry3.png');
+        const flower1Img = loadImg('flower1.png'), flower2Img = loadImg('flower2.png'), flower3Img = loadImg('flower3.png'), bubuk3Img = loadImg('bubuk3.png');
+
+        let character = { x: 530, y: 416, width: 104, height: 154, speed: 1.0, mouseSpeed: 1.0, targetX: null, targetY: null };
+
+        const colCanvas = document.createElement('canvas');
+        const colCtx = colCanvas.getContext('2d', { willReadFrequently: true });
+        let colMapReady = false;
+
+        function updateCollisionMap(imageSource) {
+            colMapReady = false;
+            const drawMap = () => {
+                try {
+                    const w = imageSource.naturalWidth || 1200, h = imageSource.naturalHeight || 900;
+                    colCanvas.width = w; colCanvas.height = h;
+                    colCtx.clearRect(0, 0, w, h);
+                    colCtx.drawImage(imageSource, 0, 0, w, h);
+                    colMapReady = true;
+                } catch (e) { colMapReady = true; }
+            };
+            if (imageSource.complete && imageSource.naturalWidth !== 0) drawMap();
+            else imageSource.onload = drawMap;
+        }
+
+        updateCollisionMap(colJalurBatuImg);
+
+        function isWalkable(x, y) {
+            if (!colMapReady) return true; 
+            if (x < 0 || y < 0 || x >= 1200 || y >= 900) return false;
+            try {
+                const scaleX = colCanvas.width / 1200, scaleY = colCanvas.height / 900;
+                const pixel = colCtx.getImageData(Math.floor(x * scaleX), Math.floor(y * scaleY), 1, 1).data;
+                return ((pixel[0] + pixel[1] + pixel[2]) / 3) > 128;
+            } catch (e) { return true; }
+        }
+
+        function isAreaSafeForBushes(x, y, margin = 15) {
+            for (let dx = -margin; dx <= margin; dx += 5) {
+                for (let dy = -margin; dy <= margin; dy += 5) {
+                    if (!isWalkable(x + dx, y + dy)) return false; 
+                }
+            }
+            return true;
+        }
+
+        function getRandomWalkablePointForMap(colImage) {
+            updateCollisionMap(colImage);
+            let rx, ry, isValid = false, attempts = 0;
+            while (!isValid) {
+                attempts++;
+                rx = Math.floor(Math.random() * 1000) + 100; 
+                ry = Math.floor(Math.random() * 700) + 100;  
+                if (isWalkable(rx, ry) && isAreaSafeForBushes(rx, ry, 15)) isValid = true;
+                if (attempts > 2000) break; 
+            }
+            updateCollisionMap(currentMap === 'jalurBatu' ? colJalurBatuImg : colMapImage);
+            return { x: rx, y: ry };
+        }
+
+        let searchPointsRandom = [{ x: 0, y: 0, lifeTimer: 10000 }, { x: 0, y: 0, lifeTimer: 10000 }];
+
+        function respawnSearchPointRandom(index) {
+            let validPoint = false, rx, ry, attempts = 0;
+            const naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
+            while (!validPoint && attempts < 200) {
+                let pt = getRandomWalkablePointForMap(colMapImage);
+                rx = pt.x; ry = pt.y;
+                if (Math.sqrt(Math.pow(naraCenterX - rx, 2) + Math.pow(naraCenterY - ry, 2)) > 200) validPoint = true;
+                attempts++;
+            }
+            searchPointsRandom[index].x = rx; searchPointsRandom[index].y = ry; searchPointsRandom[index].lifeTimer = 10000; 
+        }
+
+        let searchPointsSemak = [{ x: 0, y: 0, active: false }, { x: 0, y: 0, active: false }];
+
+        function respawnSearchPointSemak() {
+            searchPointsSemak[0].active = false; searchPointsSemak[1].active = false;
+            let randChance = Math.random(), countToSpawn = (randChance < 0.15) ? 2 : (randChance < 0.40) ? 1 : 0;
+            const naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
+
+            for (let i = 0; i < countToSpawn; i++) {
+                let validPoint = false, rx, ry;
+                while (!validPoint) {
+                    let pt = getRandomWalkablePointForMap(colMapImage);
+                    rx = pt.x; ry = pt.y;
+                    if (isWalkable(rx, ry) && isAreaSafeForBushes(rx, ry, 15) && Math.sqrt(Math.pow(naraCenterX - rx, 2) + Math.pow(naraCenterY - ry, 2)) > 150) validPoint = true;
+                }
+                searchPointsSemak[i].x = rx; searchPointsSemak[i].y = ry; searchPointsSemak[i].active = true;
+            }
+        }
+
+        let greenSlime = { active: false, isDead: false, fadeTimer: 0, alpha: 1.0, x: 0, y: 0, width: 60, height: 66, animFrame: 0, animTimer: 0, moveIntervalTimer: 0, isMoving: false, targetX: 0, targetY: 0, speed: 9 };
+
+        function forceSpawnGreenSlime() {
+            let pt = getRandomWalkablePointForMap(colMapImage);
+            greenSlime.x = pt.x; greenSlime.y = pt.y;
+            greenSlime.active = true; greenSlime.isDead = false; greenSlime.fadeTimer = 0; greenSlime.alpha = 1.0;
+        }
+
+        function trySpawnGreenSlime() {
+            if (Math.random() < 0.25) { 
+                forceSpawnGreenSlime();
+            } else { greenSlime.active = false; greenSlime.isDead = false; }
+        }
+
+        function updateGreenSlime(deltaTime) {
+            if (!greenSlime.active || currentMap !== 'gubukSunyi') return;
+
+            if (greenSlime.isDead) {
+                greenSlime.fadeTimer += deltaTime;
+                greenSlime.alpha = Math.max(0, 1.0 - (greenSlime.fadeTimer / 2000));
+                
+                // Setelah animasi slime4 (2000ms) hilang:
+                if (greenSlime.fadeTimer >= 2000) {
+                    greenSlime.active = false; 
+                    greenSlime.isDead = false;
+
+                    // Distribusi Peluang setelah Slime4 Hilang:
+                    // 1%   -> Card 35
+                    // 15%  -> Item Flower
+                    // 84%  -> Kosong
+                    let randDrop = Math.random();
+
+                    if (randDrop < 0.01) {
+                        // 1%: Peluang Mendapatkan Card 35
+                        if (!cardCollection['card35']) {
+                            triggerCardAnim('card35');
+                        }
+                    } else if (randDrop < 0.16) {
+                        // 15% (0.01 s/d 0.16): Mendapatkan item Flower
+                        addItemToInventory('flower');
+                        playSfx(dapatSfx);
+                        isFlowerAnim = true; 
+                        flowerAnimTimer = 0;
+                        itemNotification.textContent = 'Menemukan 1 flower';
+                        itemNotification.style.left = `${character.x + (character.width / 2)}px`;
+                        itemNotification.style.top = `${character.y - 15}px`;
+                        itemNotification.style.display = 'flex';
+                    }
+                    // 84% Sisanya (0.16 s/d 1.00): Kosong
+                }
+                return;
+            }
+
+            if (battleState !== 'none') return;
+            greenSlime.animTimer += deltaTime;
+            if (greenSlime.animTimer >= 300) { 
+                greenSlime.animTimer = 0; 
+                greenSlime.animFrame = (greenSlime.animFrame + 1) % 3; 
+            }
+
+            if (!greenSlime.isMoving) {
+                greenSlime.moveIntervalTimer += deltaTime;
+                if (greenSlime.moveIntervalTimer >= 5000) {
+                    greenSlime.moveIntervalTimer = 0;
+                    let angle = Math.random() * Math.PI * 2, dist = Math.random() * 50;
+                    let potentialX = Math.max(40, Math.min(1160, greenSlime.x + Math.cos(angle) * dist));
+                    let potentialY = Math.max(40, Math.min(860, greenSlime.y + Math.sin(angle) * dist));
+                    if (isWalkable(potentialX, potentialY)) { 
+                        greenSlime.targetX = potentialX; 
+                        greenSlime.targetY = potentialY; 
+                        greenSlime.isMoving = true; 
+                    }
+                }
+            } else {
+                let dx = greenSlime.targetX - greenSlime.x, dy = greenSlime.targetY - greenSlime.y;
+                let distRemaining = Math.sqrt(dx * dx + dy * dy), step = (greenSlime.speed * deltaTime) / 1000; 
+                if (distRemaining <= step || distRemaining === 0) { 
+                    greenSlime.x = greenSlime.targetX; 
+                    greenSlime.y = greenSlime.targetY; 
+                    greenSlime.isMoving = false; 
+                } else {
+                    let nextX = greenSlime.x + (dx / distRemaining) * step, nextY = greenSlime.y + (dy / distRemaining) * step;
+                    if (isWalkable(nextX, nextY)) { 
+                        greenSlime.x = nextX; 
+                        greenSlime.y = nextY; 
+                    } else greenSlime.isMoving = false; 
+                }
+            }
+        }
+
+        function drawGreenSlime(targetCtx) {
+            if (!greenSlime.active || currentMap !== 'gubukSunyi') return;
+            let currentImg = greenSlime.isDead ? slime4Img : (greenSlime.animFrame === 1 ? slime1Img : greenSlime.animFrame === 2 ? slime2Img : slime0Img);
+            if (currentImg && currentImg.complete && currentImg.naturalWidth !== 0) {
+                targetCtx.save();
+                if (greenSlime.isDead) targetCtx.globalAlpha = greenSlime.alpha;
+                targetCtx.drawImage(currentImg, greenSlime.x - (greenSlime.width / 2), greenSlime.y - (greenSlime.height / 2), greenSlime.width, greenSlime.height);
+                targetCtx.restore();
+            }
+        }
+
+        function initAllSearchPoints() {
+            for (let i = 0; i < searchPointsRandom.length; i++) respawnSearchPointRandom(i);
+            respawnSearchPointSemak(); trySpawnGreenSlime(); checkBerryMSpawn();
+        }
+
+        function triggerBattle(fromSearch = false) {
+            if (battleState !== 'none' || isGameOver || slimeEncounterCooldown > 0 || greenSlime.isDead) return;
+
+            playBattleBGM();
+
+            battleSpawnedFromSearch = fromSearch;
+            battleState = 'intro'; battleAnimTimer = 0; battleAnimStep = 0;
+            turnPhase = 'idle'; turnTimer = 0; slimeBattleHp.current = 2;
+            naraCurrentOffsetX = naraStartOffsetX; slimeCurrentOffsetLeft = slimeStartOffsetLeft;
+            isSlimeBlinking = false; qteActive = false; qteRunActive = false;
+            slimeStunned = false; slimeStunFrame = 0; slimeStunAnimTimer = 0;
+            qteBtn.style.display = 'none'; qteMultiContainer.style.display = 'none'; missTextOverlay.style.display = 'none';
+
+            battleSceneImg.src = 'bs0.gif'; battleSlimeImg.src = 'slimeb1.png';
+            battleOverlay.style.display = 'block'; battleOverlay.style.opacity = '0';
+            setTimeout(() => { battleOverlay.style.opacity = '1'; }, 10);
+
+            battleCloseBtn.style.display = 'none'; battleSlimeImg.style.display = 'none'; battleNaraImg.style.display = 'none'; battleActionContainer.style.display = 'none';
+            slimeHpBar.style.display = 'none'; naraHpBar.style.display = 'none';
+            inventorySlotsUI.style.display = 'none'; hideSingleFloatingBar(); hideFloatingTripleBar(); itemNotification.style.display = 'none';
+            character.targetX = null; character.targetY = null; resetMovementKeys(); stepMoveTimer = 0; isSearching = false; resetAllTimers();
+        }
+
+        function closeBattleScene() {
+            if (slimeBattleHp.current <= 0) {
+                playSfx(winSfx);
+            }
+
+            battleState = 'outro'; battleAnimTimer = 0; battleAnimStep = 4; turnPhase = 'idle';
+            battleSceneImg.src = 'bs4.gif'; battleCloseBtn.style.display = 'none'; battleSlimeImg.style.display = 'none';
+            battleNaraImg.style.display = 'none'; battleActionContainer.style.display = 'none';
+            slimeHpBar.style.display = 'none'; naraHpBar.style.display = 'none';
+            qteBtn.style.display = 'none'; qteMultiContainer.style.display = 'none'; missTextOverlay.style.display = 'none'; confirmDialog.style.display = 'none';
+
+            if (slimeBattleHp.current <= 0) {
+                greenSlime.isDead = true; greenSlime.fadeTimer = 0; greenSlime.alpha = 1.0;
+                if (battleSpawnedFromSearch) { greenSlime.active = true; greenSlime.x = character.x + character.width + 30; greenSlime.y = character.y + (character.height / 2); }
+            } else if (battleSpawnedFromSearch) {
+                greenSlime.active = true; greenSlime.x = character.x + character.width + 30; greenSlime.y = character.y + (character.height / 2);
+            }
+        }
+
+        battleCloseBtn.addEventListener('click', (e) => { e.stopPropagation(); closeBattleScene(); });
+
+        let lastFacing = 'front', animTimer = 0, animStep = 0, animInterval = 200; 
+        let idleFrontTimer = 0, idleFrontState = 'normal', eventFrontTimer = 0;
+        
+        const searchSequence = [
+            { img: charDefaultImg, duration: 300 }, { img: cari3Img, duration: 300 }, 
+            { img: cari6Img, duration: 300 }, { img: cari7Img, duration: 300 }, 
+            { img: cari8Img, duration: 300 }, { img: cari9Img, duration: 300 }, 
+            { img: cari5Img, duration: 1000 }  
+        ];
+        
+        let searchIndex = 0, searchTimer = 0, isSearching = false; 
+        let activeSearchType = null, activeSearchIndex = null, currentSearchingSemakIndex = null, currentSearchingType = null; 
+        let isBerryAnim = false, berryAnimTimer = 0, isFlowerAnim = false, flowerAnimTimer = 0;
+
+        function triggerRest() {
+            if (isGameOver || isSearching || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            let isMoving = isAnyMovementPressed() || (character.targetX !== null) || (stepMoveTimer > 0);
+            if (!isMoving && !isResting) {
+                isResting = true; restTimer = 0; restStaminaTimer = 0; restEnergyTimer = 0; restSeqIndex = 0;
+                hideSingleFloatingBar(); hideFloatingTripleBar(); inventorySlotsUI.style.display = 'none';
+                character.targetX = null; character.targetY = null; resetMovementKeys(); stepMoveTimer = 0; resetAllTimers();
+            }
+        }
+
+        restBtn.addEventListener('click', (e) => { e.stopPropagation(); triggerRest(); });
+
+        function triggerBedSleep() {
+            if (isGameOver || isSearching || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || stats.energy.current > 5) return;
+            let isMoving = isAnyMovementPressed() || (character.targetX !== null) || (stepMoveTimer > 0);
+            if (!isMoving) {
+                isBedSleeping = true; bedSleepPhase = 1; bedSleepTimer = 0; bedPhase3SubTimer = 0; bedPhase3SubStep = 0;
+                hideSingleFloatingBar(); hideFloatingTripleBar(); inventorySlotsUI.style.display = 'none'; itemNotification.style.display = 'none'; isBedActive = false;
+                character.targetX = null; character.targetY = null; resetMovementKeys(); stepMoveTimer = 0; resetAllTimers();
+            }
+        }
+
+        function triggerDrink() {
+            if (isGameOver || isSearching || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || !canDrink || drinkCooldownTimer > 0) return;
+            let isMoving = isAnyMovementPressed() || (character.targetX !== null) || (stepMoveTimer > 0);
+            if (!isMoving) {
+                isDrinkingAnim = true; drinkStep = 0; drinkTimer = 0; drinkCooldownTimer = 20000; 
+                hideSingleFloatingBar(); hideFloatingTripleBar(); inventorySlotsUI.style.display = 'none'; itemNotification.style.display = 'none'; isDrinkingActive = false;
+                character.targetX = null; character.targetY = null; resetMovementKeys(); stepMoveTimer = 0; resetAllTimers();
+                playSfx(waterSfx);
+            }
+        }
+
+        function applyBedSleepEffects() {
+            gameTimeMinutes += 360;
+            if (gameTimeMinutes >= 24 * 60) gameTimeMinutes -= 24 * 60;
+            modifyStat('stamina', 6 - stats.stamina.current, false);
+            modifyStat('energy', 5, false);
+            if (Math.random() < 0.50) modifyStat('hp', 1, false);
+            bedTextCooldownTimer = 5000; isBedActive = false; itemNotification.style.display = 'none';
+            showSingleFloatingBar('hp', 500);
+            setTimeout(() => { showSingleFloatingBar('stamina', 500); setTimeout(() => { showSingleFloatingBar('energy', 500); }, 500); }, 500);
+        }
+
+        function triggerSearch(type, index) {
+            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            if (searchCooldownTimer > 0 || stats.stamina.current <= 0) return;
+            let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
+
+            if (type === 'random' && Math.sqrt(Math.pow(naraCenterX - searchPointsRandom[index].x, 2) + Math.pow(naraCenterY - searchPointsRandom[index].y, 2)) > 25) return;
+            if (type === 'semak' && (!searchPointsSemak[index] || !searchPointsSemak[index].active || Math.sqrt(Math.pow(naraCenterX - searchPointsSemak[index].x, 2) + Math.pow(naraCenterY - searchPointsSemak[index].y, 2)) > 50)) return;
+            if (type === 'berryM' && (!berryM.active || Math.sqrt(Math.pow(naraCenterX - berryM.x, 2) + Math.pow(naraCenterY - berryM.y, 2)) > 100)) return;
+
+            let isMoving = isAnyMovementPressed() || (character.targetX !== null) || (stepMoveTimer > 0);
+            if (!isMoving && !isSearching && !isResting) {
+                modifyStat('stamina', -1);
+                hideFloatingTripleBar(); inventorySlotsUI.style.display = 'none';
+                searchCooldownTimer = 1000; isSearching = true; searchIndex = 0; searchTimer = 0; currentSearchingType = type; 
+                let randChance = Math.random();
+
+                if (type === 'random') {
+                    currentSearchResult = (randChance < 0.05) ? 'berry' : (randChance < 0.10) ? 'flower' : 'zonk';
+                    searchBtnsRandom[index].style.display = 'none'; respawnSearchPointRandom(index);
+                } else if (type === 'semak') {
+                    currentSearchResult = (randChance < 0.25) ? 'flower' : (randChance < 0.35) ? 'berry' : 'zonk';
+                    currentSearchingSemakIndex = index; searchBtnsSemak[index].style.display = 'none';
+                } else if (type === 'berryM') {
+                    currentSearchResult = 'berry'; berryM.active = false; searchBtnBerryM.style.display = 'none';
+                }
+                character.targetX = null; character.targetY = null; resetMovementKeys(); stepMoveTimer = 0; resetAllTimers();
+                activeSearchIndex = null; activeSearchType = null;
+            }
+        }
+
+        searchBtnBerryM.addEventListener('click', (e) => { e.stopPropagation(); triggerSearch('berryM', 0); });
+        searchBtnsRandom.forEach((btn, index) => btn.addEventListener('click', (e) => { e.stopPropagation(); triggerSearch('random', index); }));
+        searchBtnsSemak.forEach((btn, index) => btn.addEventListener('click', (e) => { e.stopPropagation(); triggerSearch('semak', index); }));
+
+        const transitionPoint = { x: 370, y: 330 }; 
+        let isTransitionActive = false;
+
+        function executeTransition() {
+            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
+            if (Math.sqrt(Math.pow(naraCenterX - transitionPoint.x, 2) + Math.pow(naraCenterY - transitionPoint.y, 2)) <= 60 && currentMap === 'gubukSunyi') {
+                transitionBtn.style.display = 'none'; isTransitionActive = false;
+                isMapWalking = true; mapWalkDirection = 'masuk'; mapWalkPhase = 1; mapWalkTargetY = character.y + 30; mapWalkTargetMap = 'jalurBatu';
+                lastFacing = 'front'; character.targetX = null; character.targetY = null; resetAllTimers();
+            }
+        }
+        transitionBtn.addEventListener('click', (e) => { e.stopPropagation(); executeTransition(); });
+
+        const returnPoint = { x: 485, y: 90 };
+        let isReturnActive = false;
+
+        function executeReturn() {
+            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
+            if (Math.sqrt(Math.pow(naraCenterX - returnPoint.x, 2) + Math.pow(naraCenterY - returnPoint.y, 2)) <= 50 && currentMap === 'jalurBatu') {
+                returnBtn.style.display = 'none'; isReturnActive = false;
+                isMapWalking = true; mapWalkDirection = 'keluar'; mapWalkPhase = 1; mapWalkTargetY = character.y - 30; mapWalkTargetMap = 'gubukSunyi';
+                lastFacing = 'back'; character.targetX = null; character.targetY = null; resetAllTimers();
+            }
+        }
+        returnBtn.addEventListener('click', (e) => { e.stopPropagation(); executeReturn(); });
+
+        let idleBackTimer = 0, isShowingBackPose = false, backPoseStep = 0, backPoseTimer = 0, backPoseDurations = [500, 500, 500, 500, 500]; 
+        let stepMoveTimer = 0, stepMoveDuration = 180; 
+
+        const keys = { up: false, down: false, left: false, right: false };
+        function isAnyMovementPressed() { return keys.up || keys.down || keys.left || keys.right; }
+        function resetMovementKeys() { keys.up = false; keys.down = false; keys.left = false; keys.right = false; }
+
+        window.addEventListener('keydown', (e) => {
+            if (isGameOver) return;
+
+            if (confirmDialog.style.display === 'flex') {
+                if (e.key === 'e' || e.key === 'E') {
+                    confirmDialog.style.display = 'none';
+                    if (pendingActionCallback) pendingActionCallback();
+                    pendingActionCallback = null; e.preventDefault();
+                } else if (e.key === ' ' || e.code === 'Space') {
+                    confirmDialog.style.display = 'none'; pendingActionCallback = null; e.preventDefault();
+                }
+                return;
+            }
+
+            if (['1', '2', '3'].includes(e.key)) { useItemInSlot(parseInt(e.key) - 1); e.preventDefault(); return; }
+
+            if (battleState === 'active' && turnPhase === 'idle') {
+                const k = e.key.toUpperCase();
+                if (k === 'A') { document.getElementById('btnAttack').click(); e.preventDefault(); return; }
+                if (k === 'S') { document.getElementById('btnDefend').click(); e.preventDefault(); return; }
+                if (k === 'D') { document.getElementById('btnRun').click(); e.preventDefault(); return; }
+            }
+
+            if (battleState === 'active' && qteActive) {
+                if (e.key.toUpperCase() === qteTargetKey) {
+                    qteSuccess = true; qteBtn.style.background = '#27ae60'; qteBtn.style.borderColor = '#2ecc71';
+                }
+                return;
+            }
+
+            if (battleState === 'active' && qteRunActive) {
+                if (e.key.toUpperCase() === qteRunKeys[qteRunCurrentIndex]) {
+                    qteRunCurrentIndex++; renderMultiQTE();
+                    if (qteRunCurrentIndex >= qteRunKeys.length) qteRunActive = false;
+                }
+                return;
+            }
+
+            if (battleState !== 'none' || isBedSleeping || isMapWalking || isDrinkingAnim) { e.preventDefault(); return; }
+
+            if (e.key === 'z' || e.key === 'Z') {
+                if (isBedActive && currentMap === 'jalurBatu' && bedTextCooldownTimer <= 0 && stats.energy.current <= 5) { triggerBedSleep(); e.preventDefault(); return; }
+                triggerRest(); e.preventDefault(); return;
+            }
+            if (e.key === 'i' || e.key === 'I') { toggleInventory(); e.preventDefault(); return; }
+            if (isResting && (e.key.startsWith('Arrow') || ['w','W','a','A','s','S','d','D','e','E'].includes(e.key))) isResting = false;
+
+            if (e.key === 'e' || e.key === 'E') {
+                if (isBookActive && currentMap === 'jalurBatu') { openCardBook(); e.preventDefault(); return; }
+                if (isDrinkingActive && currentMap === 'jalurBatu' && drinkCooldownTimer <= 0) { triggerDrink(); e.preventDefault(); return; }
+                if (isBedActive && currentMap === 'jalurBatu' && bedTextCooldownTimer <= 0 && stats.energy.current <= 5) { triggerBedSleep(); e.preventDefault(); return; }
+                if (isTransitionActive && currentMap === 'gubukSunyi') { executeTransition(); e.preventDefault(); return; }
+                if (activeSearchIndex !== null && activeSearchType !== null) {
+                    let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
+                    if (activeSearchType === 'berryM' && berryM.active && Math.sqrt(Math.pow(naraCenterX - berryM.x, 2) + Math.pow(naraCenterY - berryM.y, 2)) <= 100) triggerSearch('berryM', 0);
+                    if (activeSearchType === 'random' && Math.sqrt(Math.pow(naraCenterX - searchPointsRandom[activeSearchIndex].x, 2) + Math.pow(naraCenterY - searchPointsRandom[activeSearchIndex].y, 2)) <= 25) triggerSearch('random', activeSearchIndex);
+                    if (activeSearchType === 'semak' && searchPointsSemak[activeSearchIndex].active && Math.sqrt(Math.pow(naraCenterX - searchPointsSemak[activeSearchIndex].x, 2) + Math.pow(naraCenterY - searchPointsSemak[activeSearchIndex].y, 2)) <= 50) triggerSearch('semak', activeSearchIndex);
+                    e.preventDefault(); return;
+                }
+                if (isReturnActive && currentMap === 'jalurBatu') { executeReturn(); e.preventDefault(); return; }
+            }
+
+            if (isSearching || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting) { e.preventDefault(); return; }
+
+            let directionTriggered = null;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { if (!keys.up) directionTriggered = 'back'; keys.up = true; }
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { if (!keys.down) directionTriggered = 'front'; keys.down = true; }
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { if (!keys.left) directionTriggered = 'left'; keys.left = true; }
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { if (!keys.right) directionTriggered = 'right'; keys.right = true; }
+
+            if (directionTriggered) {
+                stepMoveTimer = stepMoveDuration; lastFacing = directionTriggered;
+                e.preventDefault(); resetAllTimers();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = false;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = false;
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (isGameOver || battleState !== 'none' || isSearching || isResting || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim) return;
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left, clickY = e.clientY - rect.top;
+
+            if (currentMap === 'jalurBatu') {
+                let distBook = Math.sqrt(Math.pow(clickX - bookPos.x, 2) + Math.pow(clickY - bookPos.y, 2));
+                if (distBook <= 60) {
+                    openCardBook();
+                    return;
+                }
+            }
+
+            if (currentMap === 'gubukSunyi') {
+                for (let i = 0; i < searchPointsSemak.length; i++) {
+                    let pt = searchPointsSemak[i];
+                    if (pt.active && isWalkable(pt.x, pt.y) && Math.sqrt(Math.pow(clickX - pt.x, 2) + Math.pow(clickY - pt.y, 2)) <= 35) {
+                        if (Math.sqrt(Math.pow((character.x + character.width/2) - pt.x, 2) + Math.pow((character.y + character.height/2) - pt.y, 2)) <= 50) {
+                            triggerSearch('semak', i); return;
+                        }
+                    }
+                }
+            }
+            if (!(clickX >= character.x && clickX <= character.x + character.width && clickY >= character.y && clickY <= character.y + character.height)) {
+                inventorySlotsUI.style.display = 'none'; hideSingleFloatingBar();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isGameOver || battleState !== 'none') {
+                hideFloatingTripleBar();
+                return;
+            }
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            if (mouseX >= character.x && mouseX <= character.x + character.width && mouseY >= character.y && mouseY <= character.y + character.height) {
+                showTripleFloatingBar();
+            } else {
+                hideFloatingTripleBar();
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            hideFloatingTripleBar();
+        });
+
+        canvas.addEventListener('dblclick', (e) => {
+            if (isGameOver || battleState !== 'none' || isSearching || isResting || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim) return;
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left, clickY = e.clientY - rect.top;
+
+            hideSingleFloatingBar(); hideFloatingTripleBar(); inventorySlotsUI.style.display = 'none';
+            if (isWalkable(clickX, clickY)) {
+                character.targetX = clickX - (character.width / 2);
+                character.targetY = clickY - (character.height / 2);
+                resetAllTimers();
+            }
+        });
+
+        function resetAllTimers() {
+            idleFrontTimer = 0;
+            if (!isSearching && !isBerryAnim && !isFlowerAnim && !isBubukAnim && !isFlowerCrafting && !isBedSleeping && !isMapWalking && !isDrinkingAnim) idleFrontState = 'normal';
+            eventFrontTimer = 0; idleBackTimer = 0; isShowingBackPose = false; backPoseStep = 0; backPoseTimer = 0;
+        }
+
+        let lastTime = performance.now();
+
+        function update(deltaTime) {
+            if (isGameOver) return;
+
+            coordXSpan.textContent = Math.round(character.x + character.width / 2);
+            coordYSpan.textContent = Math.round(character.y + character.height);
+
+            updateMosaicTransition(deltaTime);
+
+            if (drinkCooldownTimer > 0) { drinkCooldownTimer -= deltaTime; if (drinkCooldownTimer <= 0) drinkCooldownTimer = 0; }
+            if (slimeEncounterCooldown > 0) { slimeEncounterCooldown -= deltaTime; if (slimeEncounterCooldown <= 0) slimeEncounterCooldown = 0; }
+
+            /* PERBAIKAN: Update Notifikasi Teks di Atas Nara saat Animasi Kartu Aktif */
+            if (isCardAnimActive) {
+                cardAnimTimer += deltaTime;
+                cardAnimOverlay.style.left = `${character.x + (character.width / 2)}px`;
+                cardAnimOverlay.style.top = `${character.y - 15}px`;
+                if (cardAnimTimer >= 1000) {
+                    isCardAnimActive = false;
+                    cardAnimOverlay.style.display = 'none';
+                }
+            }
+
+            if (battleState === 'intro') {
+                battleAnimTimer += deltaTime;
+                if (battleAnimTimer >= 200) { 
+                    battleAnimTimer = 0; battleAnimStep++;
+                    if (battleAnimStep === 1) battleSceneImg.src = 'bs1.gif';
+                    else if (battleAnimStep === 2) battleSceneImg.src = 'bs2.gif';
+                    else if (battleAnimStep === 3) battleSceneImg.src = 'bs3.gif';
+                    else if (battleAnimStep >= 4) {
+                        battleSceneImg.src = 'bs4.gif'; battleState = 'active';
+                        battleCloseBtn.style.display = 'flex'; battleSlimeImg.style.display = 'block';
+                        battleNaraImg.style.display = 'block'; battleActionContainer.style.display = 'flex';
+                        slimeHpBar.style.display = 'flex'; naraHpBar.style.display = 'flex';
+                        updateBattleHpBarsUI();
+                    }
+                }
+                return;
+            } else if (battleState === 'active') {
+                let currentSlimeLeftCss = `calc(50% + ${slimeCurrentOffsetLeft}px)`;
+                slimeHpBar.style.left = currentSlimeLeftCss; slimeHpBar.style.top = 'calc(50% - 52px)'; slimeHpBar.style.transform = 'translate(-50%, -50%)';
+                qteBtn.style.left = currentSlimeLeftCss; qteBtn.style.top = 'calc(50% - 75px)';
+                qteMultiContainer.style.left = currentSlimeLeftCss; qteMultiContainer.style.top = 'calc(50% - 75px)';
+                missTextOverlay.style.left = `calc(50% + ${slimeCurrentOffsetLeft}px + 10px)`; missTextOverlay.style.top = 'calc(50% - 50px)';
+
+                let currentNaraXCss = `calc(50% + ${naraCurrentOffsetX}px)`;
+                naraHpBar.style.left = currentNaraXCss; naraHpBar.style.top = 'calc(50% - 165px)'; naraHpBar.style.transform = 'translate(-50%, -50%)';
+                battleSlimeImg.style.left = currentSlimeLeftCss; battleSlimeImg.style.top = '50%'; battleSlimeImg.style.transform = 'translate(-50%, -50%)';
+                battleNaraImg.style.left = currentNaraXCss; battleNaraImg.style.top = '50%'; battleNaraImg.style.transform = 'translate(-50%, -50%)';
+
+                if (turnPhase === 'idle') {
+                    if (slimeStunned) {
+                        slimeStunAnimTimer += deltaTime;
+                        if (slimeStunAnimTimer >= 400) { slimeStunAnimTimer = 0; slimeStunFrame = (slimeStunFrame === 0) ? 1 : 0; }
+                        battleSlimeImg.src = (slimeStunFrame === 0) ? 'SLIMEBSTUN1.png' : 'SLIMEBSTUN2.png';
+                    } else {
+                        slimeBattleTimer += deltaTime;
+                        if (slimeBattleTimer >= 600) { slimeBattleTimer = 0; slimeBattleFrame = (slimeBattleFrame + 1) % 2; battleSlimeImg.src = (slimeBattleFrame === 0) ? 'slimeb1.png' : 'slimeb2.png'; }
+                    }
+
+                    naraBattleTimer += deltaTime;
+                    if (naraBattleTimer >= 600) { naraBattleTimer = 0; naraBattleFrame = (naraBattleFrame + 1) % 2; battleNaraImg.src = (naraBattleFrame === 0) ? 'narabi.png' : 'narabi1.png'; }
+                } else if (turnPhase === 'run_qte_prep') {
+                    turnTimer += deltaTime;
+                    if (turnTimer === deltaTime) {
+                        qteRunKeys = [];
+                        let count = (stats.energy.current > 5) ? 3 : 5, possibleKeys = ['W', 'S', 'A', 'D'];
+                        for (let i = 0; i < count; i++) qteRunKeys.push(possibleKeys[Math.floor(Math.random() * possibleKeys.length)]);
+                        qteRunCurrentIndex = 0; qteRunActive = true; renderMultiQTE();
+                    }
+                    runBlinkTimer += deltaTime;
+                    if (runBlinkTimer >= 300) { runBlinkTimer = 0; runBlinkFrame = (runBlinkFrame === 0) ? 1 : 0; }
+                    battleNaraImg.src = (runBlinkFrame === 0) ? 'narabes.png' : 'narabes1.png';
+
+                    if (turnTimer >= 1000) {
+                        qteRunActive = false; qteMultiContainer.style.display = 'none';
+                        let success = (qteRunCurrentIndex >= qteRunKeys.length) || (Math.random() < 0.5);
+                        if (success) { turnPhase = 'run_success'; turnTimer = 0; }
+                        else { slimeCurrentOffsetLeft = slimeStartOffsetLeft + 100; turnPhase = 'slime_counter_prep'; turnTimer = 0; }
+                    }
+                } else if (turnPhase === 'run_success') {
+                    turnTimer += deltaTime;
+                    runBlinkTimer += deltaTime;
+                    if (runBlinkTimer >= 300) { runBlinkTimer = 0; runBlinkFrame = (runBlinkFrame === 0) ? 1 : 0; }
+                    battleNaraImg.src = (runBlinkFrame === 0) ? 'narabes.png' : 'narabes1.png';
+                    if (turnTimer >= 500) closeBattleScene();
+                } else if (turnPhase === 'nara_forward') {
+                    naraCurrentOffsetX -= (280 * deltaTime) / 1000; 
+                    naraWalkAnimTimer += deltaTime;
+                    if (naraWalkAnimTimer >= 300) { naraWalkAnimTimer = 0; naraWalkFrame = (naraWalkFrame === 0) ? 1 : 0; }
+                    battleNaraImg.src = (naraWalkFrame === 0) ? 'narabw1.png' : 'narabw2.png';
+
+                    if (naraCurrentOffsetX <= (naraStartOffsetX - 120)) {
+                        naraCurrentOffsetX = naraStartOffsetX - 120;
+                        turnPhase = 'nara_attack'; turnTimer = 0; naraAttackFrame = 0; naraAttackAnimTimer = 0;
+                        qteTargetKey = getRandomQTEKey(); qteSuccess = false; qteActive = true;
+                        qteBtn.textContent = qteTargetKey; qteBtn.style.background = 'rgba(42, 31, 22, 0.9)'; qteBtn.style.borderColor = '#a37c57'; qteBtn.style.display = 'flex';
+                    }
+                } else if (turnPhase === 'nara_attack') {
+                    naraAttackAnimTimer += deltaTime;
+                    if (naraAttackFrame === 1 && qteActive) { qteActive = false; qteBtn.style.display = 'none'; }
+
+                    if (naraAttackFrame === 0) {
+                        battleNaraImg.src = 'narab1.png';
+                        if (naraAttackAnimTimer >= 300) { naraAttackFrame = 1; naraAttackAnimTimer = 0; }
+                    } else if (naraAttackFrame === 1) {
+                        battleNaraImg.src = 'narab2.png';
+                        if (naraAttackAnimTimer >= 150) {
+                            qteBtn.style.display = 'none'; qteActive = false;
+                            let isHit = Math.random() < (qteSuccess ? 1.0 : 0.5);
+                            if (isHit) { turnPhase = 'slime_hit_blink'; turnTimer = 0; isSlimeBlinking = true; }
+                            else { turnPhase = 'slime_miss_anim'; turnTimer = 0; slimeMissTimer = 0; }
+                        }
+                    }
+                } else if (turnPhase === 'slime_hit_blink') {
+                    turnTimer += deltaTime;
+                    battleSlimeImg.style.visibility = (Math.floor(turnTimer / 30) % 2 === 0) ? 'hidden' : 'visible';
+                    if (turnTimer >= 200) {
+                        battleSlimeImg.style.visibility = 'visible'; isSlimeBlinking = false;
+                        slimeBattleHp.current = Math.max(0, slimeBattleHp.current - 1); updateBattleHpBarsUI();
+                        turnPhase = 'slime_hit_bd'; turnTimer = 0; 
+                        battleSlimeImg.src = 'SLIMEBD.png';
+                        playSfx(daggerSfx); 
+                    }
+                } else if (turnPhase === 'slime_hit_bd') {
+                    turnTimer += deltaTime;
+                    if (turnTimer >= 300) { turnPhase = 'slime_hit_recover'; turnTimer = 0; battleSlimeImg.src = 'slimeb1.png'; }
+                } else if (turnPhase === 'slime_hit_recover') {
+                    turnTimer += deltaTime;
+                    if (turnTimer >= 200) {
+                        if (slimeBattleHp.current <= 0) closeBattleScene();
+                        else {
+                            if (slimeStunned) { slimeStunned = false; turnPhase = 'nara_backward'; naraWalkAnimTimer = 0; naraWalkFrame = 0; }
+                            else { turnPhase = 'slime_counter_prep'; turnTimer = 0; }
+                        }
+                    }
+                } else if (turnPhase === 'slime_miss_anim') {
+                    if (turnTimer === 0) {
+                        playSfx(missSfx); 
+                    }
+                    slimeMissTimer += deltaTime; turnTimer += deltaTime;
+                    if (slimeMissTimer >= 300) missTextOverlay.style.display = 'block';
+                    battleSlimeImg.style.visibility = (Math.floor(turnTimer / 25) % 2 === 0) ? 'hidden' : 'visible';
+                    battleSlimeImg.style.transform = (turnTimer <= 100) ? 'translate(calc(-50% - 50px), calc(-50% - 50px))' : 'translate(-50%, -50%)';
+
+                    if (turnTimer >= 400) {
+                        battleSlimeImg.style.visibility = 'visible'; battleSlimeImg.style.transform = 'translate(-50%, -50%)'; missTextOverlay.style.display = 'none';
+                        battleSlimeImg.src = 'slimeb1.png';
+                        if (slimeStunned) { turnPhase = 'nara_backward'; naraWalkAnimTimer = 0; naraWalkFrame = 0; }
+                        else { turnPhase = 'slime_counter_prep'; turnTimer = 0; }
+                    }
+                } else if (turnPhase === 'defend_nara_anim') {
+                    turnTimer += deltaTime; battleNaraImg.src = 'narabd.png';
+                    
+                    if (slimeStunned) {
+                        if (turnTimer >= 500) {
+                            turnPhase = 'defend_success_nara2'; turnTimer = 0;
+                            battleNaraImg.src = 'narabd2.png';
+                        }
+                    } else {
+                        if (turnTimer >= 500) {
+                            slimeCurrentOffsetLeft = slimeStartOffsetLeft + 100; turnPhase = 'defend_slime_guarded'; turnTimer = 0;
+                            qteTargetKey = getRandomQTEKey(); qteSuccess = false; qteActive = true;
+                            qteBtn.textContent = qteTargetKey; qteBtn.style.background = 'rgba(42, 31, 22, 0.9)'; qteBtn.style.borderColor = '#a37c57'; qteBtn.style.display = 'flex';
+                        }
+                    }
+                } else if (turnPhase === 'defend_slime_guarded') {
+                    turnTimer += deltaTime;
+                    if (turnTimer >= 500 && qteActive) { qteBtn.style.display = 'none'; qteActive = false; }
+                    
+                    if (turnTimer < 500) {
+                        battleSlimeImg.src = 'slimeba1.png';
+                    } else if (turnTimer < 700) {
+                        battleSlimeImg.src = 'slimeba2.png';
+                    } else {
+                        qteBtn.style.display = 'none'; qteActive = false;
+                        if (qteSuccess || Math.random() < 0.25) {
+                            slimeStunned = true; turnPhase = 'defend_success_nara2'; turnTimer = 0; 
+                            battleNaraImg.src = 'narabd2.png';
+                            playSfx(slimeaSfx); 
+                        } else {
+                            slimeCurrentOffsetLeft = slimeStartOffsetLeft; modifyStat('hp', -1);
+                            turnPhase = 'nara_hit_blink'; turnTimer = 0;
+                        }
+                    }
+                } else if (turnPhase === 'defend_success_nara2') {
+                    turnTimer += deltaTime; battleNaraImg.src = 'narabd2.png';
+                    if (turnTimer >= 500) { 
+                        slimeCurrentOffsetLeft = slimeStartOffsetLeft; 
+                        turnPhase = 'nara_backward'; 
+                        naraWalkAnimTimer = 0; 
+                        naraWalkFrame = 0;
+                    }
+                } else if (turnPhase === 'slime_counter_prep') {
+                    if (slimeStunned) { 
+                        slimeStunned = false; 
+                        turnPhase = 'nara_backward'; 
+                        naraWalkAnimTimer = 0; 
+                        naraWalkFrame = 0; 
+                    } else {
+                        turnTimer += deltaTime;
+                        if (turnTimer === 0 || (!qteActive && turnTimer < 50)) {
+                            slimeCurrentOffsetLeft = slimeStartOffsetLeft + 100;
+                            qteTargetKey = getRandomQTEKey(); qteSuccess = false; qteActive = true;
+                            qteBtn.textContent = qteTargetKey; qteBtn.style.background = 'rgba(42, 31, 22, 0.9)'; qteBtn.style.borderColor = '#a37c57'; qteBtn.style.display = 'flex';
+                        }
+                        
+                        if (turnTimer < 500) {
+                            battleSlimeImg.src = 'slimeba1.png';
+                        } else if (turnTimer < 700) {
+                            battleSlimeImg.src = 'slimeba2.png';
+                        } else {
+                            qteBtn.style.display = 'none'; qteActive = false;
+                            if (qteSuccess) { turnPhase = 'nara_dodge_miss'; turnTimer = 0; slimeMissTimer = 0; }
+                            else { modifyStat('hp', -1); turnPhase = 'nara_hit_blink'; turnTimer = 0; }
+                        }
+                    }
+                } else if (turnPhase === 'nara_dodge_miss') {
+                    slimeMissTimer += deltaTime; turnTimer += deltaTime;
+                    if (slimeMissTimer >= 300) missTextOverlay.style.display = 'block';
+                    battleNaraImg.style.visibility = (Math.floor(turnTimer / 25) % 2 === 0) ? 'hidden' : 'visible';
+                    battleNaraImg.src = 'narabdg.png';
+
+                    if (turnTimer === deltaTime) {
+                        playSfx(missSfx); 
+                    }
+
+                    if (turnTimer >= 300) {
+                        battleNaraImg.style.visibility = 'visible'; battleNaraImg.src = 'narabi.png'; missTextOverlay.style.display = 'none';
+                        battleSlimeImg.src = 'slimeb1.png'; slimeCurrentOffsetLeft = slimeStartOffsetLeft; turnPhase = 'nara_backward'; naraWalkAnimTimer = 0; naraWalkFrame = 0;
+                    }
+                } else if (turnPhase === 'nara_hit_blink') {
+                    turnTimer += deltaTime;
+                    battleNaraImg.style.visibility = (Math.floor(turnTimer / 30) % 2 === 0) ? 'hidden' : 'visible';
+                    if (turnTimer >= 100) {
+                        battleNaraImg.style.visibility = 'visible'; turnPhase = 'nara_hit_dam'; turnTimer = 0; 
+                        battleNaraImg.src = 'narabdam.png';
+                        playSfx(slimeaSfx); 
+                    }
+                } else if (turnPhase === 'nara_hit_dam') {
+                    turnTimer += deltaTime;
+                    if (turnTimer >= 200) {
+                        battleSlimeImg.src = 'slimeb1.png';
+                        if (slimeCurrentOffsetLeft !== slimeStartOffsetLeft) slimeCurrentOffsetLeft = slimeStartOffsetLeft;
+                        turnPhase = 'nara_backward'; naraWalkAnimTimer = 0; naraWalkFrame = 0;
+                    }
+                } else if (turnPhase === 'nara_backward') {
+                    naraCurrentOffsetX += (280 * deltaTime) / 1000; 
+                    naraWalkAnimTimer += deltaTime;
+                    if (naraWalkAnimTimer >= 300) { naraWalkAnimTimer = 0; naraWalkFrame = (naraWalkFrame === 0) ? 1 : 0; }
+                    battleNaraImg.src = (naraWalkFrame === 0) ? 'narabw1.png' : 'narabw2.png';
+
+                    if (naraCurrentOffsetX >= naraStartOffsetX) {
+                        naraCurrentOffsetX = naraStartOffsetX; slimeCurrentOffsetLeft = slimeStartOffsetLeft;
+                        turnPhase = 'idle'; battleActionContainer.style.display = 'flex';
+                    }
+                }
+                return;
+            } else if (battleState === 'outro') {
+                battleAnimTimer += deltaTime;
+                if (battleAnimTimer >= 200) { 
+                    battleAnimTimer = 0; battleAnimStep--;
+                    if (battleAnimStep === 3) battleSceneImg.src = 'bs3.gif';
+                    else if (battleAnimStep === 2) battleSceneImg.src = 'bs2.gif';
+                    else if (battleAnimStep === 1) battleSceneImg.src = 'bs1.gif';
+                    else if (battleAnimStep <= 0) {
+                        battleSceneImg.src = 'bs0.gif'; battleOverlay.style.opacity = '0';
+                        setTimeout(() => {
+                            battleOverlay.style.display = 'none'; battleState = 'none';
+                            isSearching = false; qteActive = false; qteRunActive = false;
+                            slimeStunned = false; slimeStunFrame = 0; slimeStunAnimTimer = 0;
+                            qteBtn.style.display = 'none'; qteMultiContainer.style.display = 'none'; missTextOverlay.style.display = 'none';
+                            playExploreBGM();
+                            if (slimeBattleHp.current > 0) slimeEncounterCooldown = 2000; 
+                        }, 400); 
+                    }
+                }
+                return;
+            }
+
+            updateWaterDrop(deltaTime);
+            updateGreenSlime(deltaTime); 
+
+            if (greenSlime.active && !greenSlime.isDead && currentMap === 'gubukSunyi' && battleState === 'none' && slimeEncounterCooldown <= 0) {
+                let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
+                if (Math.sqrt(Math.pow(naraCenterX - greenSlime.x, 2) + Math.pow(naraCenterY - greenSlime.y, 2)) <= 75) {
+                    triggerBattle(false); return;
+                }
+            }
+
+            if (bedTextCooldownTimer > 0) { bedTextCooldownTimer -= deltaTime; if (bedTextCooldownTimer <= 0) bedTextCooldownTimer = 0; }
+
+            if (isWaterFading) {
+                waterFadeTimer += deltaTime;
+                waterFadeAlpha = Math.max(0, 1.0 - (waterFadeTimer / 1000));
+                if (waterFadeTimer >= 1000) { isWaterFading = false; canDrink = false; waterFadeAlpha = 1.0; }
+            }
+
+            if (isWaterTransitioning) {
+                waterTransitionTimer += deltaTime;
+                waterTransitionAlpha = Math.min(1.0, waterTransitionTimer / 1000);
+                if (waterTransitionTimer >= 1000) { isWaterTransitioning = false; waterTransitionAlpha = 1.0; }
+            }
+
+            let gameMinutesElapsed = (deltaTime / 1000) * (30 / 60);
+            gameTimeMinutes += gameMinutesElapsed;
+            if (gameTimeMinutes >= 24 * 60) gameTimeMinutes -= 24 * 60; 
+
+            if (!isResting && !isBedSleeping) {
+                energyLossAccumulator += gameMinutesElapsed;
+                if (energyLossAccumulator >= 60) {
+                    let energyLost = Math.floor(energyLossAccumulator / 60);
+                    energyLossAccumulator %= 60; modifyStat('energy', -energyLost);
+                }
+            } else energyLossAccumulator = 0; 
+
+            if (searchCooldownTimer > 0) searchCooldownTimer -= deltaTime;
+
+            if (isSingleBarVisible) {
+                floatingSingleBar.style.left = `${character.x + (character.width / 2)}px`;
+                floatingSingleBar.style.top = `${character.y - 10}px`;
+                singleBarTimer -= deltaTime; if (singleBarTimer <= 0) hideSingleFloatingBar();
+            }
+
+            if (isMapWalking) {
+                searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
+                transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                const walkSpeed = 1.0;
+
+                if (mapWalkDirection === 'keluar') {
+                    if (mapWalkPhase === 1) {
+                        animTimer += deltaTime; if (animTimer >= animInterval) { animTimer = 0; animStep = (animStep + 1) % 3; }
+                        lastFacing = 'back'; character.y -= walkSpeed;
+                        if (character.y <= mapWalkTargetY) {
+                            mapWalkPhase = 1.5; 
+                            startMosaicTransition(() => {
+                                currentMap = mapWalkTargetMap;
+                                checkMapBGM(); 
+                                updateCollisionMap(colMapImage); character.x = 326; character.y = 276; 
+                                respawnSearchPointSemak(); trySpawnGreenSlime(); checkBerryMSpawn(); 
+                            });
+                        }
+                    } else if (mapWalkPhase === 1.5) {
+                        if (mosaicPhase === 'none') {
+                            mapWalkPhase = 2; mapWalkAnimTimer = 0;
+                        }
+                    } else if (mapWalkPhase === 2) {
+                        mapWalkAnimTimer += deltaTime;
+                        if (mapWalkAnimTimer >= 300) { mapWalkPhase = 3; mapWalkTargetY = character.y + 30; lastFacing = 'front'; animStep = 0; animTimer = 0; }
+                    } else if (mapWalkPhase === 3) {
+                        animTimer += deltaTime; if (animTimer >= animInterval) { animTimer = 0; animStep = (animStep + 1) % 3; }
+                        lastFacing = 'front'; character.y += walkSpeed;
+                        if (character.y >= mapWalkTargetY) { character.y = mapWalkTargetY; isMapWalking = false; mapWalkPhase = 0; resetAllTimers(); }
+                    }
+                } else if (mapWalkDirection === 'masuk') {
+                    if (mapWalkPhase === 1) {
+                        animTimer += deltaTime; if (animTimer >= animInterval) { animTimer = 0; animStep = (animStep + 1) % 3; }
+                        lastFacing = 'back'; character.y -= walkSpeed;
+                        if (character.y <= mapWalkTargetY) { 
+                            mapWalkPhase = 1.5; 
+                            startMosaicTransition(() => {
+                                currentMap = mapWalkTargetMap;
+                                checkMapBGM(); 
+                                updateCollisionMap(colJalurBatuImg);
+                                character.x = 386; character.y = 19; checkDrinkChanceOnMapEnter();
+                            });
+                        }
+                    } else if (mapWalkPhase === 1.5) {
+                        if (mosaicPhase === 'none') {
+                            mapWalkPhase = 2; mapWalkAnimTimer = 0;
+                        }
+                    } else if (mapWalkPhase === 2) {
+                        mapWalkAnimTimer += deltaTime;
+                        if (mapWalkAnimTimer >= 300) {
+                            mapWalkPhase = 3; mapWalkTargetY = character.y + 30; lastFacing = 'front'; animStep = 0; animTimer = 0;
+                        }
+                    } else if (mapWalkPhase === 3) {
+                        animTimer += deltaTime; if (animTimer >= animInterval) { animTimer = 0; animStep = (animStep + 1) % 3; }
+                        lastFacing = 'front'; character.y += walkSpeed;
+                        if (character.y >= mapWalkTargetY) { character.y = mapWalkTargetY; isMapWalking = false; mapWalkPhase = 0; resetAllTimers(); }
+                    }
+                }
+                return;
+            }
+
+            if (isDrinkingAnim) {
+                searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
+                transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                drinkTimer += deltaTime;
+
+                if (drinkStep === 0 && drinkTimer >= 1000) { drinkStep = 1; drinkTimer = 0; }
+                else if (drinkStep === 1 && drinkTimer >= 1000) {
+                    isDrinkingAnim = false; drinkTimer = 0;
+                    modifyStat('stamina', 1); modifyStat('energy', 1);
+                    isWaterTransitioning = true; waterTransitionTimer = 0; waterTransitionAlpha = 0;
+                    isWaterFading = true; waterFadeTimer = 0;
+                }
+                return;
+            }
+
+            if (isBedSleeping) {
+                searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
+                transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                bedSleepTimer += deltaTime;
+
+                if (bedSleepPhase === 1 && bedSleepTimer >= 500) { bedSleepPhase = 2; bedSleepTimer = 0; }
+                else if (bedSleepPhase === 2 && bedSleepTimer >= 3000) { bedSleepPhase = 3; bedSleepTimer = 0; bedPhase3SubTimer = 0; bedPhase3SubStep = 0; }
+                else if (bedSleepPhase === 3) {
+                    bedPhase3SubTimer += deltaTime;
+                    if (bedPhase3SubTimer >= 600) { bedPhase3SubTimer = 0; bedPhase3SubStep = (bedPhase3SubStep === 0) ? 1 : 0; }
+                    if (bedSleepTimer >= 15000) { isBedSleeping = false; bedSleepPhase = 1; applyBedSleepEffects(); }
+                }
+                return;
+            }
+
+            if (isFlowerCrafting) {
+                searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
+                transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                
+                flowerCraftTimer += deltaTime;
+                itemNotification.style.left = `${character.x + (character.width / 2)}px`;
+                itemNotification.style.top = `${character.y - 15}px`;
+
+                if (flowerCraftStep === 0 && flowerCraftTimer >= 500) {
+                    flowerCraftStep = 1; flowerCraftTimer = 0;
+                    flowerCraftResult = (Math.random() < 0.50) ? 'success' : 'fail';
+                } else if (flowerCraftStep === 1 && flowerCraftTimer >= 1000) {
+                    flowerCraftStep = 2; flowerCraftTimer = 0;
+                    if (flowerCraftResult === 'success') {
+                        itemNotification.textContent = 'Mendapatkan bubuk misterius';
+                        itemNotification.style.display = 'flex';
+                        playSfx(dapatSfx);
+                        addItemToInventory('bubukMisterius', 1);
+                        isBubukAnim = true; bubukAnimTimer = 0;
+                    } else { itemNotification.textContent = '....'; itemNotification.style.display = 'flex'; }
+                } else if (flowerCraftStep === 2 && flowerCraftTimer >= 1000) {
+                    isFlowerCrafting = false; if (!isBubukAnim) itemNotification.style.display = 'none';
+                }
+                return;
+            }
+
+            if (isBerryAnim || isFlowerAnim || isBubukAnim) {
+                searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
+                transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                
+                if (isBerryAnim) berryAnimTimer += deltaTime; else if (isFlowerAnim) flowerAnimTimer += deltaTime; else if (isBubukAnim) bubukAnimTimer += deltaTime;
+                itemNotification.style.left = `${character.x + (character.width / 2)}px`;
+                itemNotification.style.top = `${character.y - 15}px`;
+
+                // Pengecekan peluang 1% saat animasi item selesai (1000ms)
+                if ((isBerryAnim && berryAnimTimer >= 1000) || (isFlowerAnim && flowerAnimTimer >= 1000) || (isBubukAnim && bubukAnimTimer >= 1000)) {
+                    if (isBerryAnim) checkCardChance('card45');   // Berry3  -> Card 45 (1%)
+                    if (isFlowerAnim) checkCardChance('card40');  // Flower3 -> Card 40 (1%)
+                    if (isBubukAnim) checkCardChance('card25');   // Bubuk3  -> Card 25 (1%)
+
+                    isBerryAnim = false; isFlowerAnim = false; isBubukAnim = false; itemNotification.style.display = 'none';
+                }
+                return;
+            }
+
+            if (isEating) {
+                searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
+                transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                eatTimer += deltaTime;
+
+                if (eatStep === 0 && eatTimer >= 300) { eatStep = 1; eatTimer = 0; }
+                else if (eatStep === 1 && eatTimer >= 300) {
+                    isEating = false; eatTimer = 0;
+                    if (currentEatingItem === 'berry') {
+                        modifyStat('stamina', 2); modifyStat('energy', 2);
+                        if (Math.random() < 0.25) modifyStat('hp', 1);
+                    } else if (currentEatingItem === 'bubukMisterius') {
+                        let rand = Math.random(); 
+                        if (rand < 0.30) modifyStat('hp', 1);
+                        else if (rand < 0.35) modifyStat('hp', 3);
+                        else if (rand < 0.65) modifyStat('stamina', 1);
+                        else if (rand < 0.70) modifyStat('stamina', 1);
+                        else if (rand < 0.71) { modifyStat('hp', 3); modifyStat('stamina', 3); }
+                        else {
+                            itemNotification.style.left = `${character.x + (character.width / 2)}px`;
+                            itemNotification.style.top = `${character.y - 15}px`;
+                            itemNotification.textContent = '....'; itemNotification.style.display = 'flex';
+                            setTimeout(() => { itemNotification.style.display = 'none'; }, 1000);
+                        }
+                    }
+                }
+                return;
+            }
+
+            if (isResting) {
+                searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
+                transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                restTimer += deltaTime; restStaminaTimer += deltaTime;
+
+                if (restStaminaTimer >= 10000) { if (stats.stamina.current < 5) modifyStat('stamina', 1); restStaminaTimer = 0; }
+                if (stats.energy.current < 5) {
+                    restEnergyTimer += deltaTime;
+                    if (restEnergyTimer >= 20000) { modifyStat('energy', 1); restEnergyTimer = 0; }
+                } else restEnergyTimer = 0;
+
+                if (restTimer >= restSequence[restSeqIndex].duration) {
+                    restTimer = 0; restSeqIndex++;
+                    if (restSeqIndex >= restSequence.length) restSeqIndex = 0; 
+                }
+                return;
+            }
+
+            if (isSearching) {
+                searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
+                transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+
+                searchTimer += deltaTime;
+                if (searchTimer >= searchSequence[searchIndex].duration) {
+                    searchIndex++; searchTimer = 0;
+                    if (searchIndex >= searchSequence.length) {
+                        isSearching = false; searchIndex = 0;
+                        if (currentSearchingType === 'semak' && currentSearchingSemakIndex !== null) {
+                            searchPointsSemak[currentSearchingSemakIndex].active = false;
+                            currentSearchingSemakIndex = null; currentSearchingType = null;
+                        }
+                        
+                        if (currentSearchResult === 'zonk') {
+                            let isSlimeOnField = (greenSlime.active && !greenSlime.isDead && currentMap === 'gubukSunyi');
+                            if (!isSlimeOnField && Math.random() < 0.10) {
+                                itemNotification.style.display = 'none'; triggerBattle(true);
+                            } else {
+                                itemNotification.style.left = `${character.x + (character.width / 2)}px`;
+                                itemNotification.style.top = `${character.y - 15}px`;
+                                itemNotification.textContent = '....'; itemNotification.style.display = 'flex';
+                                setTimeout(() => { itemNotification.style.display = 'none'; }, 500);
+                            }
+                        } else if (currentSearchResult === 'flower' || currentSearchResult === 'berry') {
+                            addItemToInventory(currentSearchResult);
+                            playSfx(dapatSfx);
+                            if (currentSearchResult === 'flower') isFlowerAnim = true; else isBerryAnim = true;
+                            flowerAnimTimer = 0; berryAnimTimer = 0;
+                            itemNotification.textContent = `Menemukan 1 ${currentSearchResult}`;
+                            itemNotification.style.display = 'flex';
+                        }
+                    }
+                }
+                return; 
+            }
+
+            let keyboardMoving = false, isMovingDown = false, isMovingUp = false, isMovingRightKey = false, isMovingLeftKey = false;
+            if (stepMoveTimer > 0) stepMoveTimer -= deltaTime;
+
+            let moveSpeed = ((keys.up || keys.down) && (keys.left || keys.right)) ? character.speed * 0.7071 : character.speed;
+            let nextX = character.x, nextY = character.y;
+
+            if (keys.up) { nextY -= moveSpeed; keyboardMoving = true; isMovingUp = true; }
+            if (keys.down) { nextY += moveSpeed; keyboardMoving = true; isMovingDown = true; }
+            if (keys.left) { nextX -= moveSpeed; keyboardMoving = true; isMovingLeftKey = true; }
+            if (keys.right) { nextX += moveSpeed; keyboardMoving = true; isMovingRightKey = true; }
+
+            if (!isAnyMovementPressed() && stepMoveTimer > 0) {
+                keyboardMoving = true;
+                if (lastFacing === 'right') { nextX += character.speed; isMovingRightKey = true; }
+                else if (lastFacing === 'left') { nextX -= character.speed; isMovingLeftKey = true; }
+                else if (lastFacing === 'back') { nextY -= character.speed; isMovingUp = true; }
+                else if (lastFacing === 'front') { nextY += character.speed; isMovingDown = true; }
+            }
+
+            if (keys.up && keys.down) { isMovingUp = false; isMovingDown = false; }
+            if (keys.left && keys.right) { isMovingLeftKey = false; isMovingRightKey = false; }
+            if (keyboardMoving) { character.targetX = null; character.targetY = null; }
+
+            let mouseMoving = false;
+            if (character.targetX !== null && character.targetY !== null) {
+                const dx = character.targetX - character.x, dy = character.targetY - character.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance > 1.5) {
+                    const step = Math.min(character.mouseSpeed, distance);
+                    nextX = character.x + (dx / distance) * step;
+                    nextY = character.y + (dy / distance) * step;
+                    mouseMoving = true;
+                    if (dy > 0) isMovingDown = true;
+                    if (dy < 0) isMovingUp = true;
+                    if (dx > 0) isMovingRightKey = true;
+                    if (dx < 0) isMovingLeftKey = true;
+                } else { character.targetX = null; character.targetY = null; }
+            }
+
+            if (keyboardMoving || mouseMoving || stepMoveTimer > 0) {
+                if (isResting) isResting = false;
+                hideSingleFloatingBar(); hideFloatingTripleBar(); inventorySlotsUI.style.display = 'none';
+            }
+
+            if (isWalkable(nextX + (character.width / 2), nextY + character.height)) {
+                character.x = nextX; character.y = nextY;
+            } else { stepMoveTimer = 0; if (mouseMoving) { character.targetX = null; character.targetY = null; } }
+
+            const naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
+
+            if (currentMap === 'gubukSunyi') {
+                let distTransition = Math.sqrt(Math.pow(naraCenterX - transitionPoint.x, 2) + Math.pow(naraCenterY - transitionPoint.y, 2));
+                if (distTransition <= 60 && !isResting && !isBedSleeping) {
+                    transitionBtn.style.display = 'flex'; transitionBtn.style.left = transitionPoint.x + 'px'; 
+                    transitionBtn.style.top = (transitionPoint.y - 80) + 'px';
+                    transitionBtn.querySelector('.key-badge').style.display = 'block'; transitionBtn.style.pointerEvents = 'auto'; isTransitionActive = true;
+                } else {
+                    transitionBtn.style.display = 'none'; transitionBtn.querySelector('.key-badge').style.display = 'none'; transitionBtn.style.pointerEvents = 'none'; isTransitionActive = false;
+                }
+            } else {
+                transitionBtn.style.display = 'none'; transitionBtn.querySelector('.key-badge').style.display = 'none'; transitionBtn.style.pointerEvents = 'none'; isTransitionActive = false;
+            }
+
+            if (currentMap === 'jalurBatu') {
+                let airW = air2Img.naturalWidth || 60, airH = air2Img.naturalHeight || 60;
+                let distDrink = Math.sqrt(Math.pow(naraCenterX - (batuAirPos.x + airW/2), 2) + Math.pow(naraCenterY - (batuAirPos.y + airH/2), 2));
+                let bedW = bedImg.naturalWidth || 100, bedH = bedImg.naturalHeight || 100;
+                let distBed = Math.sqrt(Math.pow(naraCenterX - (bedPos.x + bedW/2), 2) + Math.pow(naraCenterY - (bedPos.y + bedH/2), 2));
+                let distBook = Math.sqrt(Math.pow(naraCenterX - bookPos.x, 2) + Math.pow(naraCenterY - bookPos.y, 2));
+
+                if (distBook <= 60 && !isResting && !isBedSleeping) {
+                    isBookActive = true;
+                    bookBtn.style.display = 'flex'; bookBtn.style.left = `${bookPos.x}px`; bookBtn.style.top = `${bookPos.y}px`;
+                } else {
+                    isBookActive = false;
+                    bookBtn.style.display = 'none';
+                }
+
+                if (canDrink && drinkCooldownTimer <= 0 && distDrink <= 50 && !isResting && !isBedSleeping && !isDrinkingAnim) {
+                    isDrinkingActive = true; isBedActive = false;
+                    itemNotification.textContent = 'Mau minum ?';
+                    itemNotification.style.left = `${naraCenterX}px`; itemNotification.style.top = `${character.y - 15}px`; itemNotification.style.display = 'flex';
+                } else if (distBed <= 100 && !isResting && !isBedSleeping && bedTextCooldownTimer <= 0 && stats.energy.current <= 5) {
+                    isBedActive = true; isDrinkingActive = false;
+                    itemNotification.textContent = 'Mau Tidur ?';
+                    itemNotification.style.left = `${naraCenterX}px`; itemNotification.style.top = `${character.y - 15}px`; itemNotification.style.display = 'flex';
+                } else {
+                    isBedActive = false; isDrinkingActive = false;
+                    if (!isBerryAnim && !isFlowerAnim && !isBubukAnim && !isEating && !isSearching) itemNotification.style.display = 'none';
+                }
+            } else { isBedActive = false; isDrinkingActive = false; isBookActive = false; bookBtn.style.display = 'none'; }
+
+            if (currentMap === 'jalurBatu') {
+                let distReturn = Math.sqrt(Math.pow(naraCenterX - returnPoint.x, 2) + Math.pow(naraCenterY - returnPoint.y, 2));
+                if (distReturn <= 50 && !isResting && !isBedSleeping) {
+                    returnBtn.style.display = 'flex'; returnBtn.style.left = returnPoint.x + 'px'; returnBtn.style.top = returnPoint.y + 'px';
+                    returnBtn.querySelector('.key-badge').style.display = 'block'; returnBtn.style.pointerEvents = 'auto'; isReturnActive = true;
+                } else {
+                    returnBtn.style.display = 'none'; returnBtn.querySelector('.key-badge').style.display = 'none'; returnBtn.style.pointerEvents = 'none'; isReturnActive = false;
+                }
+            }
+
+            let foundActive = false;
+            if (currentMap === 'gubukSunyi' && berryM.active) {
+                let distBerryM = Math.sqrt(Math.pow(naraCenterX - berryM.x, 2) + Math.pow(naraCenterY - berryM.y, 2));
+                if (distBerryM <= 55 && stats.stamina.current > 0 && searchCooldownTimer <= 0 && !isResting && !isBedSleeping) {
+                    searchBtnBerryM.style.display = 'flex'; searchBtnBerryM.style.left = berryM.x + 'px'; searchBtnBerryM.style.top = berryM.y + 'px';
+                    if (distBerryM <= 25) { 
+                        searchBtnBerryM.querySelector('.btn-icon').innerHTML = `<svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>`;
+                        searchBtnBerryM.querySelector('.key-badge').style.display = 'block'; searchBtnBerryM.style.pointerEvents = 'auto';
+                        activeSearchIndex = 0; activeSearchType = 'berryM'; foundActive = true;
+                    } else {
+                        searchBtnBerryM.querySelector('.btn-icon').innerHTML = '?'; searchBtnBerryM.querySelector('.key-badge').style.display = 'none'; searchBtnBerryM.style.pointerEvents = 'none';
+                    }
+                } else searchBtnBerryM.style.display = 'none';
+            } else searchBtnBerryM.style.display = 'none';
+
+            searchPointsRandom.forEach((pt, index) => {
+                let btn = searchBtnsRandom[index];
+                pt.lifeTimer -= deltaTime; if (pt.lifeTimer <= 0) respawnSearchPointRandom(index);
+                if (currentMap === 'gubukSunyi') {
+                    let dist = Math.sqrt(Math.pow(naraCenterX - pt.x, 2) + Math.pow(naraCenterY - pt.y, 2));
+                    if (dist <= 75 && stats.stamina.current > 0 && searchCooldownTimer <= 0 && !isResting && !isBedSleeping) {
+                        btn.style.display = 'flex'; btn.style.left = pt.x + 'px'; btn.style.top = pt.y + 'px';
+                        if (dist <= 25) {
+                            btn.querySelector('.btn-icon').innerHTML = `<svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>`;
+                            btn.querySelector('.key-badge').style.display = 'block'; btn.style.pointerEvents = 'auto';
+                            activeSearchIndex = index; activeSearchType = 'random'; foundActive = true;
+                        } else {
+                            btn.querySelector('.btn-icon').innerHTML = '?'; btn.querySelector('.key-badge').style.display = 'none'; btn.style.pointerEvents = 'none';
+                        }
+                    } else btn.style.display = 'none';
+                } else btn.style.display = 'none';
+            });
+
+            searchPointsSemak.forEach((pt, index) => {
+                let btn = searchBtnsSemak[index];
+                if (pt.active && currentMap === 'gubukSunyi' && isWalkable(pt.x, pt.y)) {
+                    let dist = Math.sqrt(Math.pow(naraCenterX - pt.x, 2) + Math.pow(naraCenterY - pt.y, 2));
+                    if (dist <= 50 && stats.stamina.current > 0 && searchCooldownTimer <= 0 && !isResting && !isBedSleeping) {
+                        btn.style.display = 'flex'; btn.style.left = pt.x + 'px'; btn.style.top = pt.y + 'px';
+                        btn.querySelector('.btn-icon').innerHTML = `<svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>`;
+                        btn.querySelector('.key-badge').style.display = 'block'; btn.style.pointerEvents = 'auto';
+                        activeSearchIndex = index; activeSearchType = 'semak'; foundActive = true;
+                    } else btn.style.display = 'none';
+                } else btn.style.display = 'none';
+            });
+
+            if (!foundActive) { activeSearchIndex = null; activeSearchType = null; }
+
+            let isMovingRight = isMovingRightKey && !isMovingUp && !isMovingDown;
+            let isMovingLeft = isMovingLeftKey && !isMovingUp && !isMovingDown;
+            let isMovingForward = isMovingDown && !isMovingUp; 
+            let isMovingBackward = isMovingUp && !isMovingDown; 
+
+            if ((isMovingRightKey || isMovingLeftKey) && (isMovingUp || isMovingDown)) {
+                if (isMovingRightKey) lastFacing = 'right'; else if (isMovingLeftKey) lastFacing = 'left';
+            } else {
+                if (isMovingRight) lastFacing = 'right';
+                else if (isMovingLeft) lastFacing = 'left';
+                else if (isMovingBackward) lastFacing = 'back';
+                else if (isMovingForward) lastFacing = 'front';
+            }
+
+            if (keyboardMoving || mouseMoving || stepMoveTimer > 0) {
+                animTimer += deltaTime; if (animTimer >= animInterval) { animTimer = 0; animStep = (animStep + 1) % 3; }
+                resetAllTimers();
+            } else {
+                animStep = 0; animTimer = 0;
+                if (lastFacing === 'front') {
+                    idleBackTimer = 0; isShowingBackPose = false;
+                    if (idleFrontState === 'normal') {
+                        idleFrontTimer += deltaTime;
+                        if (idleFrontTimer >= 15000) { idleFrontState = 'pose1'; eventFrontTimer = 0; idleFrontTimer = 0; }
+                        else if (idleFrontTimer >= 3000 && idleFrontTimer < 3100) { idleFrontState = 'blink'; eventFrontTimer = 0; }
+                    } else if (idleFrontState === 'blink') {
+                        eventFrontTimer += deltaTime; if (eventFrontTimer >= 100) { idleFrontState = 'normal'; eventFrontTimer = 0; idleFrontTimer = 3100; }
+                    } else if (idleFrontState === 'pose1') {
+                        eventFrontTimer += deltaTime; if (eventFrontTimer >= 2000) { idleFrontState = 'pose2'; eventFrontTimer = 0; }
+                    } else if (idleFrontState === 'pose2') {
+                        eventFrontTimer += deltaTime; if (eventFrontTimer >= 1000) { idleFrontState = 'normal'; eventFrontTimer = 0; }
+                    }
+                } else if (lastFacing === 'back') {
+                    idleFrontTimer = 0; idleFrontState = 'normal'; eventFrontTimer = 0;
+                    if (!isShowingBackPose) {
+                        idleBackTimer += deltaTime; if (idleBackTimer >= 12000) { isShowingBackPose = true; backPoseStep = 0; backPoseTimer = 0; idleBackTimer = 0; }
+                    } else {
+                        backPoseTimer += deltaTime;
+                        if (backPoseTimer >= backPoseDurations[backPoseStep]) {
+                            backPoseStep++; backPoseTimer = 0;
+                            if (backPoseStep >= backPoseDurations.length) { isShowingBackPose = false; backPoseStep = 0; idleBackTimer = 0; }
+                        }
+                    }
+                } else resetAllTimers();
+            }
+        }
+
+        /* --- Render Seluruh Objek --- */
+        function renderGameContent(targetCtx) {
+            targetCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (currentMap === 'jalurBatu') {
+                if (bgJalurBatuImg.complete && bgJalurBatuImg.naturalWidth !== 0) targetCtx.drawImage(bgJalurBatuImg, 0, 0, canvas.width, canvas.height);
+                else { targetCtx.fillStyle = '#333'; targetCtx.fillRect(0, 0, canvas.width, canvas.height); }
+                if (bedImg.complete && bedImg.naturalWidth !== 0) targetCtx.drawImage(bedImg, bedPos.x, bedPos.y);
+                if (bookImg.complete && bookImg.naturalWidth !== 0) targetCtx.drawImage(bookImg, bookPos.x, bookPos.y);
+                if (air2Img.complete && air2Img.naturalWidth !== 0) targetCtx.drawImage(air2Img, batuAirPos.x, batuAirPos.y);
+
+                if (isDrinkingAnim || isWaterTransitioning) {
+                    if (isWaterTransitioning && air1Img.complete && air1Img.naturalWidth !== 0) {
+                        targetCtx.save(); targetCtx.globalAlpha = 1 - waterTransitionAlpha; targetCtx.drawImage(air1Img, batuAirPos.x, batuAirPos.y); targetCtx.restore();
+                    } else if (air1Img.complete && air1Img.naturalWidth !== 0) targetCtx.drawImage(air1Img, batuAirPos.x, batuAirPos.y);
+                } else if (canDrink && drinkCooldownTimer <= 0 && airImg.complete && airImg.naturalWidth !== 0) {
+                    targetCtx.save(); targetCtx.globalAlpha = waterFadeAlpha; targetCtx.drawImage(airImg, batuAirPos.x, batuAirPos.y); targetCtx.restore();
+                }
+
+                let startY = batuAirPos.y - 120, dropX = batuAirPos.x + 50; 
+                if (waterDropState === 'falling' && air3Img.complete && air3Img.naturalWidth !== 0) {
+                    targetCtx.drawImage(air3Img, dropX, startY + waterDropOffsetY);
+                } else if (waterDropState === 'splash' && air4Img.complete && air4Img.naturalWidth !== 0) {
+                    targetCtx.drawImage(air4Img, dropX, startY + 140);
+                }
+            } else {
+                let hours = gameTimeMinutes / 60; 
+                let currentBgImg = bgMalamImg, nextBgImg = bgMalamImg, transitionAlpha = 0;
+
+                if (hours >= 4 && hours < 6) { currentBgImg = bgMalamImg; nextBgImg = bgPagiImg; transitionAlpha = (hours - 4) / 2; }
+                else if (hours >= 6 && hours < 8) { currentBgImg = bgPagiImg; nextBgImg = bgPagiImg; }
+                else if (hours >= 8 && hours < 10) { currentBgImg = bgPagiImg; nextBgImg = bgSiangImg; transitionAlpha = (hours - 8) / 2; }
+                else if (hours >= 10 && hours < 15) { currentBgImg = bgSiangImg; nextBgImg = bgSiangImg; }
+                else if (hours >= 15 && hours < 17) { currentBgImg = bgSiangImg; nextBgImg = bgSoreImg; transitionAlpha = (hours - 15) / 2; }
+                else if (hours >= 17 && hours < 18.5) { currentBgImg = bgSoreImg; nextBgImg = bgSoreImg; }
+                else if (hours >= 18.5 && hours < 20) { currentBgImg = bgSoreImg; nextBgImg = bgMalamImg; transitionAlpha = (hours - 18.5) / 1.5; }
+
+                if (currentBgImg.complete && currentBgImg.naturalWidth !== 0) {
+                    targetCtx.save(); targetCtx.globalAlpha = 1 - transitionAlpha; targetCtx.drawImage(currentBgImg, 0, 0, canvas.width, canvas.height); targetCtx.restore();
+                }
+                if (transitionAlpha > 0 && nextBgImg.complete && nextBgImg.naturalWidth !== 0) {
+                    targetCtx.save(); targetCtx.globalAlpha = transitionAlpha; targetCtx.drawImage(nextBgImg, 0, 0, canvas.width, canvas.height); targetCtx.restore();
+                }
+            }
+
+            if (currentMap === 'gubukSunyi' && berryM.active && berryMImg.complete && berryMImg.naturalWidth !== 0) {
+                targetCtx.drawImage(berryMImg, berryM.x - (berryM.width / 2), berryM.y - (berryM.height / 2), berryM.width, berryM.height);
+            }
+
+            if (currentMap === 'gubukSunyi' && semakImg.complete && semakImg.naturalWidth !== 0) {
+                searchPointsSemak.forEach(pt => {
+                    if (pt.active && isWalkable(pt.x, pt.y)) targetCtx.drawImage(semakImg, pt.x - ((semakImg.naturalWidth || 48) / 2), pt.y - ((semakImg.naturalHeight || 48) / 2));
+                });
+            }
+
+            if (greenSlime.active && currentMap === 'gubukSunyi' && battleState === 'none') drawGreenSlime(targetCtx);
+
+            if (battleState === 'none') {
+                let currentImg = charDefaultImg;
+                
+                // Animasi Perolehan Card: Transisi nara.png -> card3.png selama total 1000ms
+                if (isCardAnimActive) {
+                    if (cardAnimTimer < 300) {
+                        currentImg = charDefaultImg; // 300ms pertama nara.png
+                    } else {
+                        if (card3Img.complete && card3Img.naturalWidth !== 0) {
+                            currentImg = card3Img; // Sisa waktu hingga 1000ms card3.png
+                        } else {
+                            currentImg = charDefaultImg;
+                        }
+                    }
+                } else if (isMapWalking) {
+                    currentImg = (mapWalkPhase === 2 || mapWalkPhase === 1.5) ? ((mapWalkDirection === 'keluar') ? cariImg : caribImg) : (lastFacing === 'back' ? (animStep === 0 ? charBack0Img : animStep === 1 ? charBack1Img : charBack2Img) : (animStep === 0 ? charWalk1Img : animStep === 1 ? charWalk2Img : charDefaultImg));
+                } else if (isDrinkingAnim) {
+                    currentImg = (drinkStep === 0) ? cari4Img : minumImg;
+                } else if (isBedSleeping) {
+                    currentImg = (bedSleepPhase === 1) ? cari2Img : (bedSleepPhase === 2) ? sit5Img : (bedPhase3SubStep === 0) ? sit6Img : sit7Img;
+                } else if (isFlowerCrafting) {
+                    currentImg = (flowerCraftStep === 0) ? flower1Img : (flowerCraftStep === 1) ? flower2Img : (flowerCraftResult === 'success' ? bubuk3Img : charDefaultImg);
+                } else if (isBerryAnim) {
+                    currentImg = berry3Img.complete && berry3Img.naturalWidth !== 0 ? berry3Img : charDefaultImg;
+                } else if (isFlowerAnim) {
+                    currentImg = flower3Img.complete && flower3Img.naturalWidth !== 0 ? flower3Img : charDefaultImg;
+                } else if (isBubukAnim) {
+                    currentImg = bubuk3Img.complete && bubuk3Img.naturalWidth !== 0 ? bubuk3Img : charDefaultImg;
+                } else if (isEating) {
+                    currentImg = (eatStep === 0) ? berryImg : berry1Img;
+                } else if (isResting) {
+                    let rKey = restSequence[restSeqIndex].imgKey;
+                    currentImg = rKey === 'sit' ? sitImg : rKey === 'sit1' ? sit1Img : rKey === 'sit2' ? sit2Img : rKey === 'sit3' ? sit3Img : rKey === 'sit4' ? sit4Img : sit5Img;
+                } else if (isSearching) {
+                    currentImg = searchSequence[searchIndex].img;
+                } else {
+                    let isMoving = isAnyMovementPressed() || (character.targetX !== null) || (stepMoveTimer > 0);
+                    if (isMoving) {
+                        if (lastFacing === 'front') currentImg = animStep === 0 ? charWalk1Img : animStep === 1 ? charWalk2Img : charDefaultImg;
+                        else if (lastFacing === 'back') currentImg = animStep === 0 ? charBack0Img : animStep === 1 ? charBack1Img : charBack2Img;
+                        else if (lastFacing === 'right') currentImg = animStep === 0 ? charRight0Img : animStep === 1 ? charRight1Img : charRight2Img;
+                        else currentImg = animStep === 0 ? charLeft0Img : animStep === 1 ? charLeft1Img : charLeft2Img;
+                    } else {
+                        if (lastFacing === 'front') currentImg = idleFrontState === 'blink' ? charBlinkImg : idleFrontState === 'pose1' ? charPoseFront1 : idleFrontState === 'pose2' ? charPoseFront2 : charDefaultImg;
+                        else if (lastFacing === 'back') currentImg = isShowingBackPose ? (backPoseStep % 2 === 0 ? poseNarabp : poseNarabp1) : charBack2Img;
+                        else if (lastFacing === 'right') currentImg = charRightIdle;
+                        else currentImg = charLeftIdle;
+                    }
+                }
+
+                if (currentImg && currentImg.complete && currentImg.naturalWidth !== 0) {
+                    targetCtx.drawImage(currentImg, character.x, character.y, character.width, character.height);
+                }
+            }
+        }
+
+        /* --- Draw Pixelate Mosaik Offscreen --- */
+        function draw() {
+            if (mosaicFactor <= 1) {
+                ctx.imageSmoothingEnabled = true;
+                renderGameContent(ctx);
+                return;
+            }
+
+            offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
+            renderGameContent(offCtx);
+
+            let scaledW = Math.max(1, Math.floor(canvas.width / mosaicFactor));
+            let scaledH = Math.max(1, Math.floor(canvas.height / mosaicFactor));
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.imageSmoothingEnabled = false;
+
+            ctx.drawImage(offCanvas, 0, 0, canvas.width, canvas.height, 0, 0, scaledW, scaledH);
+            ctx.drawImage(canvas, 0, 0, scaledW, scaledH, 0, 0, canvas.width, canvas.height);
+        }
+
+        function gameLoop(timestamp) {
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+            update(deltaTime);
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        updateInventoryUI();
+        initAllSearchPoints();
+        checkDrinkChanceOnMapEnter();
+        checkMapBGM(); 
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
