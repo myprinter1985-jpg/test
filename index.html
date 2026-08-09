@@ -107,6 +107,8 @@
         #getCard100Btn { color: #f1c40f; }
         #getItem100Btn { color: #38bdf8; }
         #toggleDropRateBtn { color: #e879f9; border-color: #d946ef; }
+        #toggleSpawn100Btn { color: #facc15; border-color: #eab308; }
+        #togglePortalDistBtn { color: #2dd4bf; border-color: #14b8a6; }
         #subEnergyBtn { color: #f97316; }
         #spawnSlimeBtn { color: #a3e635; }
         #addTimeBtn { color: #f4ecd8; }
@@ -559,6 +561,8 @@
             <button id="getCard100Btn" class="dev-tool-btn" title="Dapatkan 1 Card Random (100% Sukses)">Dapat Card</button>
             <button id="getItem100Btn" class="dev-tool-btn" title="Dapatkan 1 Item Acak (Berry, Flower, atau Bubuk)">Dapat Item</button>
             <button id="toggleDropRateBtn" class="dev-tool-btn" title="Ganti Peluang Drop Card (1% / 50%)">Drop Rate: 1%</button>
+            <button id="toggleSpawn100Btn" class="dev-tool-btn" title="Atur Semua Spawn Chance jadi 100% / Normal">Spawn: Normal</button>
+            <button id="togglePortalDistBtn" class="dev-tool-btn" title="Toggle Jarak Muncul Tombol Pindah Map (Normal / 2000px)">Portal: Normal</button>
             <button id="subEnergyBtn" class="dev-tool-btn" title="Kurangi Energy sebanyak -5">-5 Energy</button>
             <button id="spawnSlimeBtn" class="dev-tool-btn" title="Munculkan Slime di Map">Spawn Slime</button>
             <button id="addTimeBtn" class="dev-tool-btn" title="Tambah 4 Jam Waktu Game">+4 Jam</button>
@@ -610,6 +614,9 @@
 
         <button id="transitionBtn" class="map-arrow-btn" title="Masuk Jalur Batu"><img src="arrowbawah.png" alt="Masuk Jalur Batu"><span class="key-badge">E</span></button>
         <button id="returnBtn" class="map-arrow-btn" title="Keluar"><img src="arrowatas.png" alt="Keluar"><span class="key-badge">E</span></button>
+
+        <button id="portalTerusanSunyiBtn" class="map-arrow-btn" title="Terusan Sunyi"><img src="arrowbawah.png" alt="Terusan Sunyi"><span class="key-badge">E</span></button>
+        <button id="portalHutanSunyiBtn" class="map-arrow-btn" title="Ke Hutan Sunyi"><img src="arrowatas.png" alt="Ke Hutan Sunyi"><span class="key-badge">E</span></button>
 
         <button id="restBtn" title="Rest (Tekan Z)"><span class="rest-icon-text">Zzz</span><span class="key-badge">Z</span></button>
 
@@ -812,23 +819,62 @@
         const transitionBtn = document.getElementById('transitionBtn');
         const returnBtn = document.getElementById('returnBtn');
 
+        const portalTerusanSunyiBtn = document.getElementById('portalTerusanSunyiBtn');
+        const portalHutanSunyiBtn = document.getElementById('portalHutanSunyiBtn');
+
         /* --- DEVELOPER TOOL EVENTS --- */
-        let cardDropRateProb = 0.01; // Default 1% (0.01)
+        let cardDropRateProb = 0.01; 
+        let portalMaxDistance = 60;   
+        let isSpawn100Percent = false; 
+
+        const togglePortalDistBtn = document.getElementById('togglePortalDistBtn');
+        togglePortalDistBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (portalMaxDistance === 60) {
+                portalMaxDistance = 2000;
+                togglePortalDistBtn.textContent = 'Portal: 2000px';
+                togglePortalDistBtn.style.color = '#38bdf8';
+                togglePortalDistBtn.style.borderColor = '#0284c7';
+            } else {
+                portalMaxDistance = 60;
+                togglePortalDistBtn.textContent = 'Portal: Normal';
+                togglePortalDistBtn.style.color = '#2dd4bf';
+                togglePortalDistBtn.style.borderColor = '#14b8a6';
+            }
+        });
 
         const toggleDropRateBtn = document.getElementById('toggleDropRateBtn');
         toggleDropRateBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (cardDropRateProb === 0.01) {
-                cardDropRateProb = 0.50; // Mode 50%
+                cardDropRateProb = 0.50;
                 toggleDropRateBtn.textContent = 'Drop Rate: 50%';
                 toggleDropRateBtn.style.color = '#a855f7';
                 toggleDropRateBtn.style.borderColor = '#c084fc';
             } else {
-                cardDropRateProb = 0.01; // Mode 1%
+                cardDropRateProb = 0.01;
                 toggleDropRateBtn.textContent = 'Drop Rate: 1%';
                 toggleDropRateBtn.style.color = '#e879f9';
                 toggleDropRateBtn.style.borderColor = '#d946ef';
             }
+        });
+
+        const toggleSpawn100Btn = document.getElementById('toggleSpawn100Btn');
+        toggleSpawn100Btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isSpawn100Percent = !isSpawn100Percent;
+            if (isSpawn100Percent) {
+                toggleSpawn100Btn.textContent = 'Spawn: 100%';
+                toggleSpawn100Btn.style.color = '#4ade80';
+                toggleSpawn100Btn.style.borderColor = '#22c55e';
+            } else {
+                toggleSpawn100Btn.textContent = 'Spawn: Normal';
+                toggleSpawn100Btn.style.color = '#facc15';
+                toggleSpawn100Btn.style.borderColor = '#eab308';
+            }
+            respawnSearchPointSemak();
+            trySpawnGreenSlime();
+            checkBerryMSpawn();
         });
 
         const addTimeBtn = document.getElementById('addTimeBtn');
@@ -956,7 +1002,6 @@
             triggerCardAnim(cardToUnlock);
         }
 
-        /* --- FUNGSI DEVELOPER TOOL: MENDAPATKAN ITEM RANDOM 100% --- */
         function triggerRandomItem100() {
             const possibleItems = ['berry', 'flower', 'bubuk'];
             const randomItem = possibleItems[Math.floor(Math.random() * possibleItems.length)];
@@ -1209,7 +1254,7 @@
         let isBookActive = false;
 
         function checkDrinkChanceOnMapEnter() {
-            canDrink = (drinkCooldownTimer <= 0 && Math.random() < 0.10);
+            canDrink = isSpawn100Percent ? true : (drinkCooldownTimer <= 0 && Math.random() < 0.10);
             isWaterFading = false; waterFadeAlpha = 1.0;
             isWaterTransitioning = false; waterTransitionAlpha = 1.0;
         }
@@ -1232,7 +1277,11 @@
         let berryM = { x: 663, y: 300, width: 120, height: 97, active: false };
 
         function checkBerryMSpawn() {
-            berryM.active = (Math.random() < 0.05);
+            if (currentMap === 'terusanSunyi') {
+                berryM.active = false; 
+            } else {
+                berryM.active = isSpawn100Percent ? true : (Math.random() < 0.05);
+            }
         }
 
         function updateBattleHpBarsUI() {
@@ -1362,7 +1411,9 @@
             searchBtnBerryM.style.display = 'none';
             searchBtnsRandom.forEach(b => b.style.display = 'none');
             searchBtnsSemak.forEach(b => b.style.display = 'none');
-            transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
+            transitionBtn.style.display = 'none'; returnBtn.style.display = 'none';
+            portalTerusanSunyiBtn.style.display = 'none'; portalHutanSunyiBtn.style.display = 'none';
+            bookBtn.style.display = 'none';
             restBtn.style.display = 'none'; bagBtn.style.display = 'none';
             inventorySlotsUI.style.display = 'none'; hideSingleFloatingBar(); hideFloatingTripleBar();
             itemNotification.style.display = 'none'; cardAnimOverlay.style.display = 'none'; cardBookModal.style.display = 'none'; cardZoomModal.style.display = 'none';
@@ -1410,6 +1461,12 @@
         const bgSoreImg  = loadImg('gubuk-sunyi-s.gif');  
         const bgMalamImg = loadImg('gubuk-sunyi-m.gif'); 
         const colMapImage = loadImg('gubuk-sunyi-col.gif'); 
+
+        const bgTerusanPagiImg  = loadImg('terusan-sunyi-p.gif');
+        const bgTerusanSiangImg = loadImg('terusan-sunyi.gif');
+        const bgTerusanSoreImg  = loadImg('terusan-sunyi-s.gif');
+        const bgTerusanMalamImg = loadImg('terusan-sunyi-m.gif');
+        const colTerusanSunyiImg = loadImg('terusan-sunyi-col.gif');
 
         const bedImg      = loadImg('bed.png');
         const bookImg     = loadImg('book.png'); 
@@ -1493,7 +1550,10 @@
                 if (isWalkable(rx, ry) && isAreaSafeForBushes(rx, ry, 15)) isValid = true;
                 if (attempts > 2000) break; 
             }
-            updateCollisionMap(currentMap === 'jalurBatu' ? colJalurBatuImg : colMapImage);
+            updateCollisionMap(
+                currentMap === 'jalurBatu' ? colJalurBatuImg :
+                currentMap === 'terusanSunyi' ? colTerusanSunyiImg : colMapImage
+            );
             return { x: rx, y: ry };
         }
 
@@ -1502,8 +1562,9 @@
         function respawnSearchPointRandom(index) {
             let validPoint = false, rx, ry, attempts = 0;
             const naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
+            let targetColImg = currentMap === 'terusanSunyi' ? colTerusanSunyiImg : colMapImage;
             while (!validPoint && attempts < 200) {
-                let pt = getRandomWalkablePointForMap(colMapImage);
+                let pt = getRandomWalkablePointForMap(targetColImg);
                 rx = pt.x; ry = pt.y;
                 if (Math.sqrt(Math.pow(naraCenterX - rx, 2) + Math.pow(naraCenterY - ry, 2)) > 200) validPoint = true;
                 attempts++;
@@ -1515,13 +1576,15 @@
 
         function respawnSearchPointSemak() {
             searchPointsSemak[0].active = false; searchPointsSemak[1].active = false;
-            let randChance = Math.random(), countToSpawn = (randChance < 0.15) ? 2 : (randChance < 0.40) ? 1 : 0;
+            let randChance = Math.random();
+            let countToSpawn = isSpawn100Percent ? 2 : ((randChance < 0.15) ? 2 : (randChance < 0.40) ? 1 : 0);
             const naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
+            let targetColImg = currentMap === 'terusanSunyi' ? colTerusanSunyiImg : colMapImage;
 
             for (let i = 0; i < countToSpawn; i++) {
                 let validPoint = false, rx, ry;
                 while (!validPoint) {
-                    let pt = getRandomWalkablePointForMap(colMapImage);
+                    let pt = getRandomWalkablePointForMap(targetColImg);
                     rx = pt.x; ry = pt.y;
                     if (isWalkable(rx, ry) && isAreaSafeForBushes(rx, ry, 15) && Math.sqrt(Math.pow(naraCenterX - rx, 2) + Math.pow(naraCenterY - ry, 2)) > 150) validPoint = true;
                 }
@@ -1532,19 +1595,20 @@
         let greenSlime = { active: false, isDead: false, fadeTimer: 0, alpha: 1.0, x: 0, y: 0, width: 60, height: 66, animFrame: 0, animTimer: 0, moveIntervalTimer: 0, isMoving: false, targetX: 0, targetY: 0, speed: 9 };
 
         function forceSpawnGreenSlime() {
-            let pt = getRandomWalkablePointForMap(colMapImage);
+            let targetColImg = currentMap === 'terusanSunyi' ? colTerusanSunyiImg : colMapImage;
+            let pt = getRandomWalkablePointForMap(targetColImg);
             greenSlime.x = pt.x; greenSlime.y = pt.y;
             greenSlime.active = true; greenSlime.isDead = false; greenSlime.fadeTimer = 0; greenSlime.alpha = 1.0;
         }
 
         function trySpawnGreenSlime() {
-            if (Math.random() < 0.25) { 
+            if (isSpawn100Percent || Math.random() < 0.25) { 
                 forceSpawnGreenSlime();
             } else { greenSlime.active = false; greenSlime.isDead = false; }
         }
 
         function updateGreenSlime(deltaTime) {
-            if (!greenSlime.active || currentMap !== 'gubukSunyi') return;
+            if (!greenSlime.active || (currentMap !== 'gubukSunyi' && currentMap !== 'terusanSunyi')) return;
 
             if (greenSlime.isDead) {
                 greenSlime.fadeTimer += deltaTime;
@@ -1556,7 +1620,6 @@
 
                     let randDrop = Math.random();
 
-                    // Peluang Card35 (Disesuaikan dengan Tombol Developer Tool Drop Rate 1% / 50%)
                     if (randDrop < cardDropRateProb) {
                         if (!cardCollection['card35']) {
                             triggerCardAnim('card35');
@@ -1613,7 +1676,7 @@
         }
 
         function drawGreenSlime(targetCtx) {
-            if (!greenSlime.active || currentMap !== 'gubukSunyi') return;
+            if (!greenSlime.active || (currentMap !== 'gubukSunyi' && currentMap !== 'terusanSunyi')) return;
             let currentImg = greenSlime.isDead ? slime4Img : (greenSlime.animFrame === 1 ? slime1Img : greenSlime.animFrame === 2 ? slime2Img : slime0Img);
             if (currentImg && currentImg.complete && currentImg.naturalWidth !== 0) {
                 targetCtx.save();
@@ -1770,7 +1833,7 @@
         function executeTransition() {
             if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
             let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
-            if (Math.sqrt(Math.pow(naraCenterX - transitionPoint.x, 2) + Math.pow(naraCenterY - transitionPoint.y, 2)) <= 60 && currentMap === 'gubukSunyi') {
+            if (Math.sqrt(Math.pow(naraCenterX - transitionPoint.x, 2) + Math.pow(naraCenterY - transitionPoint.y, 2)) <= portalMaxDistance && currentMap === 'gubukSunyi') {
                 transitionBtn.style.display = 'none'; isTransitionActive = false;
                 isMapWalking = true; mapWalkDirection = 'masuk'; mapWalkPhase = 1; mapWalkTargetY = character.y + 30; mapWalkTargetMap = 'jalurBatu';
                 lastFacing = 'front'; character.targetX = null; character.targetY = null; resetAllTimers();
@@ -1784,13 +1847,41 @@
         function executeReturn() {
             if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
             let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
-            if (Math.sqrt(Math.pow(naraCenterX - returnPoint.x, 2) + Math.pow(naraCenterY - returnPoint.y, 2)) <= 50 && currentMap === 'jalurBatu') {
+            if (Math.sqrt(Math.pow(naraCenterX - returnPoint.x, 2) + Math.pow(naraCenterY - returnPoint.y, 2)) <= portalMaxDistance && currentMap === 'jalurBatu') {
                 returnBtn.style.display = 'none'; isReturnActive = false;
                 isMapWalking = true; mapWalkDirection = 'keluar'; mapWalkPhase = 1; mapWalkTargetY = character.y - 30; mapWalkTargetMap = 'gubukSunyi';
                 lastFacing = 'back'; character.targetX = null; character.targetY = null; resetAllTimers();
             }
         }
         returnBtn.addEventListener('click', (e) => { e.stopPropagation(); executeReturn(); });
+
+        /* --- PORTAL TERUSAN SUNYI --- */
+        const portalTerusanSunyiPos = { x: 640, y: 810 };
+        const portalHutanSunyiPos = { x: 640, y: 160 };
+        let isPortalTerusanSunyiActive = false;
+        let isPortalHutanSunyiActive = false;
+
+        function executePortalTerusanSunyi() {
+            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
+            if (Math.sqrt(Math.pow(naraCenterX - portalTerusanSunyiPos.x, 2) + Math.pow(naraCenterY - portalTerusanSunyiPos.y, 2)) <= portalMaxDistance && currentMap === 'gubukSunyi') {
+                portalTerusanSunyiBtn.style.display = 'none'; isPortalTerusanSunyiActive = false;
+                isMapWalking = true; mapWalkDirection = 'keTerusan'; mapWalkPhase = 1; mapWalkTargetY = character.y + 30; mapWalkTargetMap = 'terusanSunyi';
+                lastFacing = 'front'; character.targetX = null; character.targetY = null; resetAllTimers();
+            }
+        }
+        portalTerusanSunyiBtn.addEventListener('click', (e) => { e.stopPropagation(); executePortalTerusanSunyi(); });
+
+        function executePortalHutanSunyi() {
+            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
+            if (Math.sqrt(Math.pow(naraCenterX - portalHutanSunyiPos.x, 2) + Math.pow(naraCenterY - portalHutanSunyiPos.y, 2)) <= portalMaxDistance && currentMap === 'terusanSunyi') {
+                portalHutanSunyiBtn.style.display = 'none'; isPortalHutanSunyiActive = false;
+                isMapWalking = true; mapWalkDirection = 'keHutan'; mapWalkPhase = 1; mapWalkTargetY = character.y - 30; mapWalkTargetMap = 'gubukSunyi';
+                lastFacing = 'back'; character.targetX = null; character.targetY = null; resetAllTimers();
+            }
+        }
+        portalHutanSunyiBtn.addEventListener('click', (e) => { e.stopPropagation(); executePortalHutanSunyi(); });
 
         let idleBackTimer = 0, isShowingBackPose = false, backPoseStep = 0, backPoseTimer = 0, backPoseDurations = [500, 500, 500, 500, 500]; 
         let stepMoveTimer = 0, stepMoveDuration = 180; 
@@ -1851,6 +1942,8 @@
                 if (isDrinkingActive && currentMap === 'jalurBatu' && drinkCooldownTimer <= 0) { triggerDrink(); e.preventDefault(); return; }
                 if (isBedActive && currentMap === 'jalurBatu' && bedTextCooldownTimer <= 0 && stats.energy.current <= 5) { triggerBedSleep(); e.preventDefault(); return; }
                 if (isTransitionActive && currentMap === 'gubukSunyi') { executeTransition(); e.preventDefault(); return; }
+                if (isPortalTerusanSunyiActive && currentMap === 'gubukSunyi') { executePortalTerusanSunyi(); e.preventDefault(); return; }
+                if (isPortalHutanSunyiActive && currentMap === 'terusanSunyi') { executePortalHutanSunyi(); e.preventDefault(); return; }
                 if (activeSearchIndex !== null && activeSearchType !== null) {
                     let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
                     if (activeSearchType === 'berryM' && berryM.active && Math.sqrt(Math.pow(naraCenterX - berryM.x, 2) + Math.pow(naraCenterY - berryM.y, 2)) <= 100) triggerSearch('berryM', 0);
@@ -1895,7 +1988,7 @@
                 }
             }
 
-            if (currentMap === 'gubukSunyi') {
+            if (currentMap === 'gubukSunyi' || currentMap === 'terusanSunyi') {
                 for (let i = 0; i < searchPointsSemak.length; i++) {
                     let pt = searchPointsSemak[i];
                     if (pt.active && isWalkable(pt.x, pt.y) && Math.sqrt(Math.pow(clickX - pt.x, 2) + Math.pow(clickY - pt.y, 2)) <= 35) {
@@ -2233,7 +2326,7 @@
             updateWaterDrop(deltaTime);
             updateGreenSlime(deltaTime); 
 
-            if (greenSlime.active && !greenSlime.isDead && currentMap === 'gubukSunyi' && battleState === 'none' && slimeEncounterCooldown <= 0) {
+            if (greenSlime.active && !greenSlime.isDead && (currentMap === 'gubukSunyi' || currentMap === 'terusanSunyi') && battleState === 'none' && slimeEncounterCooldown <= 0) {
                 let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
                 if (Math.sqrt(Math.pow(naraCenterX - greenSlime.x, 2) + Math.pow(naraCenterY - greenSlime.y, 2)) <= 75) {
                     triggerBattle(false); return;
@@ -2277,10 +2370,65 @@
             if (isMapWalking) {
                 searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
                 transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
-                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                portalTerusanSunyiBtn.style.display = 'none'; portalHutanSunyiBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isPortalTerusanSunyiActive = false; isPortalHutanSunyiActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
                 const walkSpeed = 1.0;
 
-                if (mapWalkDirection === 'keluar') {
+                if (mapWalkDirection === 'keTerusan') {
+                    if (mapWalkPhase === 1) {
+                        animTimer += deltaTime; if (animTimer >= animInterval) { animTimer = 0; animStep = (animStep + 1) % 3; }
+                        lastFacing = 'front'; character.y += walkSpeed;
+                        if (character.y >= mapWalkTargetY) {
+                            mapWalkPhase = 1.5; 
+                            startMosaicTransition(() => {
+                                currentMap = mapWalkTargetMap;
+                                checkMapBGM(); 
+                                updateCollisionMap(colTerusanSunyiImg); 
+                                character.x = 640 - (character.width / 2); 
+                                character.y = 160; 
+                                respawnSearchPointSemak(); trySpawnGreenSlime(); checkBerryMSpawn(); 
+                            });
+                        }
+                    } else if (mapWalkPhase === 1.5) {
+                        if (mosaicPhase === 'none') {
+                            mapWalkPhase = 2; mapWalkAnimTimer = 0;
+                        }
+                    } else if (mapWalkPhase === 2) {
+                        mapWalkAnimTimer += deltaTime;
+                        if (mapWalkAnimTimer >= 300) { mapWalkPhase = 3; mapWalkTargetY = character.y + 30; lastFacing = 'front'; animStep = 0; animTimer = 0; }
+                    } else if (mapWalkPhase === 3) {
+                        animTimer += deltaTime; if (animTimer >= animInterval) { animTimer = 0; animStep = (animStep + 1) % 3; }
+                        lastFacing = 'front'; character.y += walkSpeed;
+                        if (character.y >= mapWalkTargetY) { character.y = mapWalkTargetY; isMapWalking = false; mapWalkPhase = 0; resetAllTimers(); }
+                    }
+                } else if (mapWalkDirection === 'keHutan') {
+                    if (mapWalkPhase === 1) {
+                        animTimer += deltaTime; if (animTimer >= animInterval) { animTimer = 0; animStep = (animStep + 1) % 3; }
+                        lastFacing = 'back'; character.y -= walkSpeed;
+                        if (character.y <= mapWalkTargetY) {
+                            mapWalkPhase = 1.5; 
+                            startMosaicTransition(() => {
+                                currentMap = mapWalkTargetMap;
+                                checkMapBGM(); 
+                                updateCollisionMap(colMapImage); 
+                                character.x = 640 - (character.width / 2); 
+                                character.y = 720; 
+                                respawnSearchPointSemak(); trySpawnGreenSlime(); checkBerryMSpawn(); 
+                            });
+                        }
+                    } else if (mapWalkPhase === 1.5) {
+                        if (mosaicPhase === 'none') {
+                            mapWalkPhase = 2; mapWalkAnimTimer = 0;
+                        }
+                    } else if (mapWalkPhase === 2) {
+                        mapWalkAnimTimer += deltaTime;
+                        if (mapWalkAnimTimer >= 300) { mapWalkPhase = 3; mapWalkTargetY = character.y - 30; lastFacing = 'back'; animStep = 0; animTimer = 0; }
+                    } else if (mapWalkPhase === 3) {
+                        animTimer += deltaTime; if (animTimer >= animInterval) { animTimer = 0; animStep = (animStep + 1) % 3; }
+                        lastFacing = 'back'; character.y -= walkSpeed;
+                        if (character.y <= mapWalkTargetY) { character.y = mapWalkTargetY; isMapWalking = false; mapWalkPhase = 0; resetAllTimers(); }
+                    }
+                } else if (mapWalkDirection === 'keluar') {
                     if (mapWalkPhase === 1) {
                         animTimer += deltaTime; if (animTimer >= animInterval) { animTimer = 0; animStep = (animStep + 1) % 3; }
                         lastFacing = 'back'; character.y -= walkSpeed;
@@ -2340,7 +2488,8 @@
             if (isDrinkingAnim) {
                 searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
                 transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
-                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                portalTerusanSunyiBtn.style.display = 'none'; portalHutanSunyiBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isPortalTerusanSunyiActive = false; isPortalHutanSunyiActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
                 drinkTimer += deltaTime;
 
                 if (drinkStep === 0 && drinkTimer >= 1000) { drinkStep = 1; drinkTimer = 0; }
@@ -2356,7 +2505,8 @@
             if (isBedSleeping) {
                 searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
                 transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
-                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                portalTerusanSunyiBtn.style.display = 'none'; portalHutanSunyiBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isPortalTerusanSunyiActive = false; isPortalHutanSunyiActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
                 bedSleepTimer += deltaTime;
 
                 if (bedSleepPhase === 1 && bedSleepTimer >= 500) { bedSleepPhase = 2; bedSleepTimer = 0; }
@@ -2372,7 +2522,8 @@
             if (isFlowerCrafting) {
                 searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
                 transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
-                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                portalTerusanSunyiBtn.style.display = 'none'; portalHutanSunyiBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isPortalTerusanSunyiActive = false; isPortalHutanSunyiActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
                 
                 flowerCraftTimer += deltaTime;
                 itemNotification.style.left = `${character.x + (character.width / 2)}px`;
@@ -2399,7 +2550,8 @@
             if (isBerryAnim || isFlowerAnim || isBubukAnim) {
                 searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
                 transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
-                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                portalTerusanSunyiBtn.style.display = 'none'; portalHutanSunyiBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isPortalTerusanSunyiActive = false; isPortalHutanSunyiActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
                 
                 if (isBerryAnim) berryAnimTimer += deltaTime; else if (isFlowerAnim) flowerAnimTimer += deltaTime; else if (isBubukAnim) bubukAnimTimer += deltaTime;
                 itemNotification.style.left = `${character.x + (character.width / 2)}px`;
@@ -2418,7 +2570,8 @@
             if (isEating) {
                 searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
                 transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
-                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                portalTerusanSunyiBtn.style.display = 'none'; portalHutanSunyiBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isPortalTerusanSunyiActive = false; isPortalHutanSunyiActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
                 eatTimer += deltaTime;
 
                 if (eatStep === 0 && eatTimer >= 300) { eatStep = 1; eatTimer = 0; }
@@ -2448,7 +2601,8 @@
             if (isResting) {
                 searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
                 transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
-                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                portalTerusanSunyiBtn.style.display = 'none'; portalHutanSunyiBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isPortalTerusanSunyiActive = false; isPortalHutanSunyiActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
                 restTimer += deltaTime; restStaminaTimer += deltaTime;
 
                 if (restStaminaTimer >= 10000) { if (stats.stamina.current < 5) modifyStat('stamina', 1); restStaminaTimer = 0; }
@@ -2467,7 +2621,8 @@
             if (isSearching) {
                 searchBtnBerryM.style.display = 'none'; searchBtnsRandom.forEach(b => b.style.display = 'none'); searchBtnsSemak.forEach(b => b.style.display = 'none');
                 transitionBtn.style.display = 'none'; returnBtn.style.display = 'none'; bookBtn.style.display = 'none';
-                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
+                portalTerusanSunyiBtn.style.display = 'none'; portalHutanSunyiBtn.style.display = 'none';
+                activeSearchIndex = null; activeSearchType = null; isTransitionActive = false; isReturnActive = false; isPortalTerusanSunyiActive = false; isPortalHutanSunyiActive = false; isBedActive = false; isDrinkingActive = false; isBookActive = false;
 
                 searchTimer += deltaTime;
                 if (searchTimer >= searchSequence[searchIndex].duration) {
@@ -2480,7 +2635,7 @@
                         }
                         
                         if (currentSearchResult === 'zonk') {
-                            let isSlimeOnField = (greenSlime.active && !greenSlime.isDead && currentMap === 'gubukSunyi');
+                            let isSlimeOnField = (greenSlime.active && !greenSlime.isDead && (currentMap === 'gubukSunyi' || currentMap === 'terusanSunyi'));
                             if (!isSlimeOnField && Math.random() < 0.10) {
                                 itemNotification.style.display = 'none'; triggerBattle(true);
                             } else {
@@ -2546,7 +2701,10 @@
                 hideSingleFloatingBar(); hideFloatingTripleBar(); inventorySlotsUI.style.display = 'none';
             }
 
-            updateCollisionMap(currentMap === 'jalurBatu' ? colJalurBatuImg : colMapImage);
+            updateCollisionMap(
+                currentMap === 'jalurBatu' ? colJalurBatuImg :
+                currentMap === 'terusanSunyi' ? colTerusanSunyiImg : colMapImage
+            );
 
             if (isWalkable(nextX + (character.width / 2), nextY + character.height)) {
                 character.x = nextX; character.y = nextY;
@@ -2556,15 +2714,40 @@
 
             if (currentMap === 'gubukSunyi') {
                 let distTransition = Math.sqrt(Math.pow(naraCenterX - transitionPoint.x, 2) + Math.pow(naraCenterY - transitionPoint.y, 2));
-                if (distTransition <= 60 && !isResting && !isBedSleeping) {
+                if (distTransition <= portalMaxDistance && !isResting && !isBedSleeping) {
                     transitionBtn.style.display = 'flex'; transitionBtn.style.left = transitionPoint.x + 'px'; 
                     transitionBtn.style.top = (transitionPoint.y - 80) + 'px';
                     transitionBtn.querySelector('.key-badge').style.display = 'block'; transitionBtn.style.pointerEvents = 'auto'; isTransitionActive = true;
                 } else {
                     transitionBtn.style.display = 'none'; transitionBtn.querySelector('.key-badge').style.display = 'none'; transitionBtn.style.pointerEvents = 'none'; isTransitionActive = false;
                 }
+
+                let distPortalTerusan = Math.sqrt(Math.pow(naraCenterX - portalTerusanSunyiPos.x, 2) + Math.pow(naraCenterY - portalTerusanSunyiPos.y, 2));
+                if (distPortalTerusan <= portalMaxDistance && !isResting && !isBedSleeping) {
+                    portalTerusanSunyiBtn.style.display = 'flex';
+                    portalTerusanSunyiBtn.style.left = portalTerusanSunyiPos.x + 'px';
+                    portalTerusanSunyiBtn.style.top = portalTerusanSunyiPos.y + 'px';
+                    portalTerusanSunyiBtn.querySelector('.key-badge').style.display = 'block'; portalTerusanSunyiBtn.style.pointerEvents = 'auto'; isPortalTerusanSunyiActive = true;
+                } else {
+                    portalTerusanSunyiBtn.style.display = 'none'; portalTerusanSunyiBtn.querySelector('.key-badge').style.display = 'none'; portalTerusanSunyiBtn.style.pointerEvents = 'none'; isPortalTerusanSunyiActive = false;
+                }
             } else {
                 transitionBtn.style.display = 'none'; transitionBtn.querySelector('.key-badge').style.display = 'none'; transitionBtn.style.pointerEvents = 'none'; isTransitionActive = false;
+                portalTerusanSunyiBtn.style.display = 'none'; portalTerusanSunyiBtn.querySelector('.key-badge').style.display = 'none'; portalTerusanSunyiBtn.style.pointerEvents = 'none'; isPortalTerusanSunyiActive = false;
+            }
+
+            if (currentMap === 'terusanSunyi') {
+                let distPortalHutan = Math.sqrt(Math.pow(naraCenterX - portalHutanSunyiPos.x, 2) + Math.pow(naraCenterY - portalHutanSunyiPos.y, 2));
+                if (distPortalHutan <= portalMaxDistance && !isResting && !isBedSleeping) {
+                    portalHutanSunyiBtn.style.display = 'flex';
+                    portalHutanSunyiBtn.style.left = portalHutanSunyiPos.x + 'px';
+                    portalHutanSunyiBtn.style.top = portalHutanSunyiPos.y + 'px';
+                    portalHutanSunyiBtn.querySelector('.key-badge').style.display = 'block'; portalHutanSunyiBtn.style.pointerEvents = 'auto'; isPortalHutanSunyiActive = true;
+                } else {
+                    portalHutanSunyiBtn.style.display = 'none'; portalHutanSunyiBtn.querySelector('.key-badge').style.display = 'none'; portalHutanSunyiBtn.style.pointerEvents = 'none'; isPortalHutanSunyiActive = false;
+                }
+            } else {
+                portalHutanSunyiBtn.style.display = 'none'; portalHutanSunyiBtn.querySelector('.key-badge').style.display = 'none'; portalHutanSunyiBtn.style.pointerEvents = 'none'; isPortalHutanSunyiActive = false;
             }
 
             if (currentMap === 'jalurBatu') {
@@ -2598,7 +2781,7 @@
 
             if (currentMap === 'jalurBatu') {
                 let distReturn = Math.sqrt(Math.pow(naraCenterX - returnPoint.x, 2) + Math.pow(naraCenterY - returnPoint.y, 2));
-                if (distReturn <= 50 && !isResting && !isBedSleeping) {
+                if (distReturn <= portalMaxDistance && !isResting && !isBedSleeping) {
                     returnBtn.style.display = 'flex'; returnBtn.style.left = returnPoint.x + 'px'; returnBtn.style.top = returnPoint.y + 'px';
                     returnBtn.querySelector('.key-badge').style.display = 'block'; returnBtn.style.pointerEvents = 'auto'; isReturnActive = true;
                 } else {
@@ -2624,7 +2807,7 @@
             searchPointsRandom.forEach((pt, index) => {
                 let btn = searchBtnsRandom[index];
                 pt.lifeTimer -= deltaTime; if (pt.lifeTimer <= 0) respawnSearchPointRandom(index);
-                if (currentMap === 'gubukSunyi') {
+                if (currentMap === 'gubukSunyi' || currentMap === 'terusanSunyi') {
                     let dist = Math.sqrt(Math.pow(naraCenterX - pt.x, 2) + Math.pow(naraCenterY - pt.y, 2));
                     if (dist <= 75 && stats.stamina.current > 0 && searchCooldownTimer <= 0 && !isResting && !isBedSleeping) {
                         btn.style.display = 'flex'; btn.style.left = pt.x + 'px'; btn.style.top = pt.y + 'px';
@@ -2641,7 +2824,7 @@
 
             searchPointsSemak.forEach((pt, index) => {
                 let btn = searchBtnsSemak[index];
-                if (pt.active && currentMap === 'gubukSunyi' && isWalkable(pt.x, pt.y)) {
+                if (pt.active && (currentMap === 'gubukSunyi' || currentMap === 'terusanSunyi') && isWalkable(pt.x, pt.y)) {
                     let dist = Math.sqrt(Math.pow(naraCenterX - pt.x, 2) + Math.pow(naraCenterY - pt.y, 2));
                     if (dist <= 50 && stats.stamina.current > 0 && searchCooldownTimer <= 0 && !isResting && !isBedSleeping) {
                         btn.style.display = 'flex'; btn.style.left = pt.x + 'px'; btn.style.top = pt.y + 'px';
@@ -2728,15 +2911,24 @@
                 }
             } else {
                 let hours = gameTimeMinutes / 60; 
-                let currentBgImg = bgMalamImg, nextBgImg = bgMalamImg, transitionAlpha = 0;
 
-                if (hours >= 4 && hours < 6) { currentBgImg = bgMalamImg; nextBgImg = bgPagiImg; transitionAlpha = (hours - 4) / 2; }
-                else if (hours >= 6 && hours < 8) { currentBgImg = bgPagiImg; nextBgImg = bgPagiImg; }
-                else if (hours >= 8 && hours < 10) { currentBgImg = bgPagiImg; nextBgImg = bgSiangImg; transitionAlpha = (hours - 8) / 2; }
-                else if (hours >= 10 && hours < 15) { currentBgImg = bgSiangImg; nextBgImg = bgSiangImg; }
-                else if (hours >= 15 && hours < 17) { currentBgImg = bgSiangImg; nextBgImg = bgSoreImg; transitionAlpha = (hours - 15) / 2; }
-                else if (hours >= 17 && hours < 18.5) { currentBgImg = bgSoreImg; nextBgImg = bgSoreImg; }
-                else if (hours >= 18.5 && hours < 20) { currentBgImg = bgSoreImg; nextBgImg = bgMalamImg; transitionAlpha = (hours - 18.5) / 1.5; }
+                let curPagi = bgPagiImg, curSiang = bgSiangImg, curSore = bgSoreImg, curMalam = bgMalamImg;
+                if (currentMap === 'terusanSunyi') {
+                    curPagi = bgTerusanPagiImg;
+                    curSiang = bgTerusanSiangImg;
+                    curSore = bgTerusanSoreImg;
+                    curMalam = bgTerusanMalamImg;
+                }
+
+                let currentBgImg = curMalam, nextBgImg = curMalam, transitionAlpha = 0;
+
+                if (hours >= 4 && hours < 6) { currentBgImg = curMalam; nextBgImg = curPagi; transitionAlpha = (hours - 4) / 2; }
+                else if (hours >= 6 && hours < 8) { currentBgImg = curPagi; nextBgImg = curPagi; }
+                else if (hours >= 8 && hours < 10) { currentBgImg = curPagi; nextBgImg = curSiang; transitionAlpha = (hours - 8) / 2; }
+                else if (hours >= 10 && hours < 15) { currentBgImg = curSiang; nextBgImg = curSiang; }
+                else if (hours >= 15 && hours < 17) { currentBgImg = curSiang; nextBgImg = curSore; transitionAlpha = (hours - 15) / 2; }
+                else if (hours >= 17 && hours < 18.5) { currentBgImg = curSore; nextBgImg = curSore; }
+                else if (hours >= 18.5 && hours < 20) { currentBgImg = curSore; nextBgImg = curMalam; transitionAlpha = (hours - 18.5) / 1.5; }
 
                 if (currentBgImg.complete && currentBgImg.naturalWidth !== 0) {
                     targetCtx.save(); targetCtx.globalAlpha = 1 - transitionAlpha; targetCtx.drawImage(currentBgImg, 0, 0, canvas.width, canvas.height); targetCtx.restore();
@@ -2750,13 +2942,13 @@
                 targetCtx.drawImage(berryMImg, berryM.x - (berryM.width / 2), berryM.y - (berryM.height / 2), berryM.width, berryM.height);
             }
 
-            if (currentMap === 'gubukSunyi' && semakImg.complete && semakImg.naturalWidth !== 0) {
+            if ((currentMap === 'gubukSunyi' || currentMap === 'terusanSunyi') && semakImg.complete && semakImg.naturalWidth !== 0) {
                 searchPointsSemak.forEach(pt => {
                     if (pt.active && isWalkable(pt.x, pt.y)) targetCtx.drawImage(semakImg, pt.x - ((semakImg.naturalWidth || 48) / 2), pt.y - ((semakImg.naturalHeight || 48) / 2));
                 });
             }
 
-            if (greenSlime.active && currentMap === 'gubukSunyi' && battleState === 'none') drawGreenSlime(targetCtx);
+            if (greenSlime.active && (currentMap === 'gubukSunyi' || currentMap === 'terusanSunyi') && battleState === 'none') drawGreenSlime(targetCtx);
 
             if (battleState === 'none') {
                 let currentImg = charDefaultImg;
@@ -2772,7 +2964,8 @@
                         }
                     }
                 } else if (isMapWalking) {
-                    currentImg = (mapWalkPhase === 2 || mapWalkPhase === 1.5) ? ((mapWalkDirection === 'keluar') ? cariImg : caribImg) : (lastFacing === 'back' ? (animStep === 0 ? charBack0Img : animStep === 1 ? charBack1Img : charBack2Img) : (animStep === 0 ? charWalk1Img : animStep === 1 ? charWalk2Img : charDefaultImg));
+                    // MENGGUNAKAN ANIMASI BERJALAN STANDARD (TANPA PENGGUNAAN CARI/CARIB SAMA SEKALI)
+                    currentImg = lastFacing === 'back' ? (animStep === 0 ? charBack0Img : animStep === 1 ? charBack1Img : charBack2Img) : (animStep === 0 ? charWalk1Img : animStep === 1 ? charWalk2Img : charDefaultImg);
                 } else if (isDrinkingAnim) {
                     currentImg = (drinkStep === 0) ? cari4Img : minumImg;
                 } else if (isBedSleeping) {
