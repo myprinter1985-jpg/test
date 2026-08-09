@@ -217,7 +217,7 @@
             white-space: nowrap;
         }
 
-        /* --- Modal Buku Koleksi Kartu Maksimal 3 Kolom (Container Biasa, Border & Shadow) --- */
+        /* --- Modal Buku Koleksi Kartu --- */
         #cardBookModal {
             position: absolute;
             top: 50%;
@@ -246,7 +246,6 @@
             text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
         }
         
-        /* Grid 3 Kolom Maksimal */
         .card-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -254,7 +253,6 @@
             width: 100%;
         }
 
-        /* Slot Kartu Lebih Kecil Proporsional */
         .card-slot {
             background: rgba(45, 27, 14, 0.85);
             border: 2px dashed #6b5238;
@@ -306,7 +304,7 @@
             font-size: 12px;
         }
 
-        /* --- Modal Zoom Detail Card (400x551 px) --- */
+        /* --- Modal Zoom Detail Card --- */
         #cardZoomModal {
             position: absolute;
             top: 50%;
@@ -509,7 +507,7 @@
 <body>
 
     <div class="game-container">
-        <!-- Audio BGM & SFX Eksternal (Lowercased) -->
+        <!-- Audio BGM & SFX Eksternal -->
         <audio id="exploreAudio" src="explore.mp3" preload="auto" loop></audio>
         <audio id="battleAudio" src="battle.mp3" preload="auto" loop></audio>
         <audio id="daggerSfx" src="dagger.mp3" preload="auto"></audio>
@@ -540,21 +538,16 @@
 
         <div id="itemNotification">Menemukan item</div>
 
-        <!-- Card Anim Overlay (Teks "Mendapatkan card" saja) -->
         <div id="cardAnimOverlay">
             <div id="cardAnimText">Mendapatkan card</div>
         </div>
 
-        <!-- Card Book Modal Container Biasa (Border & Shadow) -->
         <div id="cardBookModal">
             <h2>BUKU KOLEKSI KARTU</h2>
-            <div class="card-grid" id="cardGridContainer">
-                <!-- Slot kartu akan digenerate secara dinamis lewat JavaScript -->
-            </div>
+            <div class="card-grid" id="cardGridContainer"></div>
             <button id="closeCardBookBtn">TUTUP</button>
         </div>
 
-        <!-- Card Zoom Detail Modal (400x551 px) -->
         <div id="cardZoomModal">
             <img id="cardZoomImg" src="card25.png" alt="Zoom Card">
             <button id="closeCardZoomBtn">TUTUP</button>
@@ -714,7 +707,6 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // --- Offscreen Canvas khusus untuk Transisi Mosaik Tajam ---
         const offCanvas = document.createElement('canvas');
         const offCtx = offCanvas.getContext('2d');
         offCanvas.width = 1200;
@@ -762,7 +754,6 @@
             if (gameTimeMinutes >= 24 * 60) gameTimeMinutes -= 24 * 60;
         });
 
-        /* --- Event Listener Tombol Spawn Slime --- */
         const spawnSlimeBtn = document.getElementById('spawnSlimeBtn');
         spawnSlimeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -795,22 +786,15 @@
         const coordXSpan = document.getElementById('coordX');
         const coordYSpan = document.getElementById('coordY');
 
-        /* --- SISTEM CARD COLLECTION MAKSIMAL 3 ITEM & ZOOM --- */
         let cardCollection = {
-            card25: false,
-            card30: false,
-            card35: false,
-            card40: false,
-            card45: false,
-            card50: false,
-            card55: false,
-            card60: false
+            card25: false, card30: false, card35: false, card40: false,
+            card45: false, card50: false, card55: false, card60: false
         };
         let isCardAnimActive = false;
         let cardAnimTimer = 0;
 
         function triggerCardAnim(cardKey) {
-            if (cardCollection[cardKey]) return; // Kartu hanya bisa didapatkan 1x
+            if (cardCollection[cardKey]) return;
             cardCollection[cardKey] = true;
             updateCardBookUI();
 
@@ -818,23 +802,18 @@
             isCardAnimActive = true;
             cardAnimTimer = 0;
             
-            // Posisikan dan tampilkan notifikasi teks di atas kepala Nara
             cardAnimOverlay.style.left = `${character.x + (character.width / 2)}px`;
             cardAnimOverlay.style.top = `${character.y - 15}px`;
             cardAnimOverlay.style.display = 'flex';
         }
 
-        // Pengecekan peluang perolehan kartu dengan rate 1%
         function checkCardChance(cardKey) {
             if (cardCollection[cardKey]) return;
-
-            if (Math.random() < 0.01) { // Chance 1%
-                triggerCardAnim(cardKey);
-            }
+            if (Math.random() < 0.01) { triggerCardAnim(cardKey); }
         }
 
         function openCardZoom(cardKey) {
-            if (!cardCollection[cardKey]) return; // Hanya yang unlocked bisa di-zoom
+            if (!cardCollection[cardKey]) return;
             cardZoomImg.src = `${cardKey.toLowerCase()}.png`;
             cardZoomModal.style.display = 'flex';
         }
@@ -846,21 +825,15 @@
 
         function updateCardBookUI() {
             cardGridContainer.innerHTML = '';
-            
-            // Ambil daftar kartu yang sudah dikoleksi (unlocked)
             const allCards = ['card25', 'card30', 'card35', 'card40', 'card45', 'card50', 'card55', 'card60'];
             const unlockedCards = allCards.filter(key => cardCollection[key]);
 
-            // Selalu tampilkan minimal 1 slot kosong (placeholder / kartu yang belum didapat pertama)
-            // Ditambah jumlah kartu yang sudah didapat (unlocked), maksimal total 3 slot (1 kosong + 2 unlocked)
-            let slotsToDisplay = [null]; // 1 slot kosong awal
+            let slotsToDisplay = [null];
             unlockedCards.forEach(key => {
-                if (slotsToDisplay.length < 3) {
-                    slotsToDisplay.push(key);
-                }
+                if (slotsToDisplay.length < 3) slotsToDisplay.push(key);
             });
 
-            slotsToDisplay.forEach((key, index) => {
+            slotsToDisplay.forEach((key) => {
                 const slot = document.createElement('div');
                 slot.className = 'card-slot';
 
@@ -979,7 +952,6 @@
 
         let isMapWalking = false, mapWalkPhase = 0, mapWalkTargetY = 0, mapWalkTargetMap = '', mapWalkAnimTimer = 0, mapWalkDirection = 'keluar'; 
         
-        /* --- Variabel Mosaic / Pixelate Transition --- */
         let mosaicFactor = 1; 
         let mosaicPhase = 'none'; 
         let mosaicTimer = 0;
@@ -1236,7 +1208,7 @@
 
         function loadImg(src) {
             const img = new Image();
-            img.src = src.toLowerCase(); // Pengaman ekstra agar selalu lowercase
+            img.src = src.toLowerCase();
             return img;
         }
 
@@ -1257,7 +1229,12 @@
         const minumImg    = loadImg('minum.png');
         const semakImg    = loadImg('semakf.png'); 
 
+        /* --- Asset Slime LENGKAP --- */
         const slime0Img = loadImg('slime.png'), slime1Img = loadImg('slime1.png'), slime2Img = loadImg('slime2.png'), slime4Img = loadImg('slime4.png');
+        const slimebdImg = loadImg('slimebd.png');
+        const slimebstun1Img = loadImg('slimebstun1.png');
+        const slimebstun2Img = loadImg('slimebstun2.png');
+
         const bgJalurBatuImg = loadImg('jalur-batu.gif'), colJalurBatuImg = loadImg('jalur-batu-col.gif');
 
         const charDefaultImg = loadImg('nara.png'), charBlinkImg = loadImg('narak.png'), charPoseFront1 = loadImg('narap.png'), charPoseFront2 = loadImg('narap1.png');
@@ -1834,7 +1811,7 @@
                     if (slimeStunned) {
                         slimeStunAnimTimer += deltaTime;
                         if (slimeStunAnimTimer >= 400) { slimeStunAnimTimer = 0; slimeStunFrame = (slimeStunFrame === 0) ? 1 : 0; }
-                        battleSlimeImg.src = (slimeStunFrame === 0) ? 'slimebstun1.png' : 'slimebstun2.png';
+                        battleSlimeImg.src = (slimeStunFrame === 0) ? slimebstun1Img.src : slimebstun2Img.src;
                     } else {
                         slimeBattleTimer += deltaTime;
                         if (slimeBattleTimer >= 600) { slimeBattleTimer = 0; slimeBattleFrame = (slimeBattleFrame + 1) % 2; battleSlimeImg.src = (slimeBattleFrame === 0) ? 'slimeb1.png' : 'slimeb2.png'; }
@@ -1901,7 +1878,7 @@
                         battleSlimeImg.style.visibility = 'visible'; isSlimeBlinking = false;
                         slimeBattleHp.current = Math.max(0, slimeBattleHp.current - 1); updateBattleHpBarsUI();
                         turnPhase = 'slime_hit_bd'; turnTimer = 0; 
-                        battleSlimeImg.src = 'slimebd.png';
+                        battleSlimeImg.src = slimebdImg.src;
                         playSfx(daggerSfx); 
                     }
                 } else if (turnPhase === 'slime_hit_bd') {
@@ -2119,7 +2096,8 @@
                             startMosaicTransition(() => {
                                 currentMap = mapWalkTargetMap;
                                 checkMapBGM(); 
-                                updateCollisionMap(colMapImage); character.x = 326; character.y = 276; 
+                                updateCollisionMap(colMapImage); 
+                                character.x = 326; character.y = 276; 
                                 respawnSearchPointSemak(); trySpawnGreenSlime(); checkBerryMSpawn(); 
                             });
                         }
@@ -2375,6 +2353,9 @@
                 hideSingleFloatingBar(); hideFloatingTripleBar(); inventorySlotsUI.style.display = 'none';
             }
 
+            // --- Perbaikan Pengecekan Peta Kolisi Aktif ---
+            updateCollisionMap(currentMap === 'jalurBatu' ? colJalurBatuImg : colMapImage);
+
             if (isWalkable(nextX + (character.width / 2), nextY + character.height)) {
                 character.x = nextX; character.y = nextY;
             } else { stepMoveTimer = 0; if (mouseMoving) { character.targetX = null; character.targetY = null; } }
@@ -2528,7 +2509,7 @@
             }
         }
 
-        /* --- Render Seluruh Objek --- */
+        /* --- Render Content Game --- */
         function renderGameContent(targetCtx) {
             targetCtx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -2640,7 +2621,6 @@
             }
         }
 
-        /* --- Draw Pixelate Mosaik Offscreen --- */
         function draw() {
             if (mosaicFactor <= 1) {
                 ctx.imageSmoothingEnabled = true;
