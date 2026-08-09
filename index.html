@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tampil Gambar Batu.gif di Canvas</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 2px solid #333;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas dengan ukuran 1200 x 900 -->
+    <canvas id="batuCanvas" width="1200" height="900"></canvas>
+
+    <script>
+        const canvas = document.getElementById('batuCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Membuat objek gambar baru
+        const img = new Image();
+        img.src = 'batu.gif';
+
+        // Menunggu gambar selesai dimuat sebelum digambar ke canvas
+        img.onload = function() {
+            // Menggambar gambar di koordinat (0, 0)
+            // Anda bisa menyesuaikan ukuran dan posisi gambar di sini jika diperlukan
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+
+        img.onerror = function() {
+            console.error("Gagal memuat file batu.gif. Pastikan nama file dan lokasinya sudah benar.");
+        };
+    </script>
+
+</body>
+</html>
