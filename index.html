@@ -53,7 +53,7 @@
             display: block;
         }
 
-        /* Loading Indicator di Layar Utama */
+        /* Loading Indicator di Layar Utama / Transisi Map */
         #loadingText {
             position: absolute;
             bottom: 30px;
@@ -732,69 +732,130 @@
         let isAllAssetsLoaded = false;
         let startScreenTimer = 0;
 
-        /* --- PRELOADER ASSETS SYSTEM --- */
-        const allAssetUrls = [
-            'gubuk-sunyi-p.gif', 'gubuk-sunyi.gif', 'gubuk-sunyi-s.gif', 'gubuk-sunyi-m.gif', 'gubuk-sunyi-col.gif',
-            'terusan-sunyi-p.gif', 'terusan-sunyi.gif', 'terusan-sunyi-s.gif', 'terusan-sunyi-m.gif', 'terusan-sunyi-col.gif',
-            'jalur-batu.gif', 'jalur-batu-col.gif',
-            'bed.png', 'book.png', 'card3.png', 'air.png', 'air1.png', 'air2.png', 'air3.png', 'air4.png', 'minum.png', 'semakf.png',
-            'berry.png', 'berrym.png', 'berry1.png', 'berry3.png', 'flower1.png', 'flower2.png', 'flower3.png', 'bubuk3.png',
-            'slime.png', 'slime1.png', 'slime2.png', 'slime4.png', 'slimebd.png', 'slimebstun1.png', 'slimebstun2.png',
-            'slimeb1.png', 'slimeb2.png', 'slimeba1.png', 'slimeba2.png',
-            'bs0.gif', 'bs1.gif', 'bs2.gif', 'bs3.gif', 'bs4.gif',
+        /* --- ASSET MANAJEMEN DINAMIS PER MAP --- */
+        // Daftar aset universal yang selalu dibutuhkan di semua map / kondisi
+        const universalAssets = [
+            'judul.png', 'tas.png', 'berryic.png', 'floweric.png', 'bubuk.png',
+            'card25.png', 'card35.png', 'card40.png', 'card45.png', 'arrowbawah.png', 'arrowatas.png',
             'nara.png', 'narak.png', 'narap.png', 'narap1.png', 'naraw1.png', 'naraw2.png',
             'narawb1.png', 'narawb2.png', 'narawb.png', 'narawr1.png', 'narawr2.png', 'narawr3.png', 'narawr.png',
-            'narawl1.png', 'narawl2.png', 'narawl3.png', 'narawl.png', 'narabp.png', 'narabp1.png',
-            'narabi.png', 'narabi1.png', 'narab1.png', 'narab11.png', 'narab2.png', 'narab21.png',
-            'narabd.png', 'narabd2.png', 'narabw1.png', 'narabw2.png', 'narabes.png', 'narabes1.png',
-            'narabdg.png', 'narabdam.png', 'narabk1.png', 'narabp2.png',
+            'narawl1.png', 'narawl2.png', 'narawl3.png', 'narawl.png',
             'cari.png', 'carib.png', 'cari1.png', 'cari2.png', 'cari3.png', 'cari4.png', 'cari5.png', 'cari6.png', 'cari7.png', 'cari8.png', 'cari9.png',
             'sit.png', 'sit1.png', 'sit2.png', 'sit3.png', 'sit4.png', 'sit5.png', 'sit6.png', 'sit7.png',
-            'judul.png', 'tas.png', 'berryic.png', 'floweric.png', 'bubuk.png',
-            'card25.png', 'card35.png', 'card40.png', 'card45.png', 'arrowbawah.png', 'arrowatas.png'
+            'berry.png', 'berrym.png', 'berry1.png', 'berry3.png', 'flower1.png', 'flower2.png', 'flower3.png', 'bubuk3.png',
+            'slime.png', 'slime1.png', 'slime2.png', 'slime4.png',
+            'card3.png'
         ];
 
-        let loadedAssetsCount = 0;
-        const totalAssets = allAssetUrls.length;
+        // Aset spesifik per map
+        const mapSpecificAssets = {
+            'gubukSunyi': [
+                'gubuk-sunyi-p.gif', 'gubuk-sunyi.gif', 'gubuk-sunyi-s.gif', 'gubuk-sunyi-m.gif', 'gubuk-sunyi-col.gif',
+                'semakf.png'
+            ],
+            'terusanSunyi': [
+                'terusan-sunyi-p.gif', 'terusan-sunyi.gif', 'terusan-sunyi-s.gif', 'terusan-sunyi-m.gif', 'terusan-sunyi-col.gif',
+                'semakf.png'
+            ],
+            'jalurBatu': [
+                'jalur-batu.gif', 'jalur-batu-col.gif', 'bed.png', 'book.png',
+                'air.png', 'air1.png', 'air2.png', 'air3.png', 'air4.png', 'minum.png'
+            ]
+        };
 
-        function preloadImage(url) {
-            return new Promise((resolve) => {
+        // Cache objek gambar aktif yang sedang dimuat di memori
+        let loadedAssets = {}; 
+
+        function preloadImagesList(urls, onProgress, onComplete) {
+            let loadedCount = 0;
+            const total = urls.length;
+            if (total === 0) {
+                if (onComplete) onComplete();
+                return;
+            }
+
+            urls.forEach(url => {
+                const lowerUrl = url.toLowerCase();
+                if (loadedAssets[lowerUrl]) {
+                    loadedCount++;
+                    if (onProgress) onProgress(loadedCount, total);
+                    if (loadedCount === total && onComplete) onComplete();
+                    return;
+                }
+
                 const img = new Image();
                 img.onload = () => {
-                    loadedAssetsCount++;
-                    updateLoadingProgress();
-                    resolve(img);
+                    loadedAssets[lowerUrl] = img;
+                    loadedCount++;
+                    if (onProgress) onProgress(loadedCount, total);
+                    if (loadedCount === total && onComplete) onComplete();
                 };
                 img.onerror = () => {
-                    loadedAssetsCount++;
-                    updateLoadingProgress();
-                    resolve(img);
+                    loadedCount++;
+                    if (onProgress) onProgress(loadedCount, total);
+                    if (loadedCount === total && onComplete) onComplete();
                 };
-                img.src = url.toLowerCase();
+                img.src = lowerUrl;
             });
         }
 
-        function updateLoadingProgress() {
-            const percent = Math.floor((loadedAssetsCount / totalAssets) * 100);
-            if (loadingText) {
-                loadingText.textContent = `Memuat Game... ${percent}%`;
-            }
-            if (loadedAssetsCount >= totalAssets) {
-                isAllAssetsLoaded = true;
-                if (loadingText) loadingText.style.display = 'none';
-            }
+        // Fungsi membersihkan aset map lama dari memori (kecuali universal assets)
+        function cleanUnusedAssets(activeMapName) {
+            let allowedUrls = [...universalAssets, ...(mapSpecificAssets[activeMapName] || [])];
+            // Tambahkan juga aset battle jika sedang dalam pertarungan (atau biarkan aman)
+            const battleAssets = [
+                'slimebd.png', 'slimebstun1.png', 'slimebstun2.png',
+                'slimeb1.png', 'slimeb2.png', 'slimeba1.png', 'slimeba2.png',
+                'bs0.gif', 'bs1.gif', 'bs2.gif', 'bs3.gif', 'bs4.gif',
+                'narabp.png', 'narabp1.png', 'narabi.png', 'narabi1.png', 
+                'narab1.png', 'narab11.png', 'narab2.png', 'narab21.png',
+                'narabd.png', 'narabd2.png', 'narabw1.png', 'narabw2.png', 
+                'narabes.png', 'narabes1.png', 'narabdg.png', 'narabdam.png', 
+                'narabk1.png', 'narabp2.png'
+            ];
+            allowedUrls = allowedUrls.concat(battleAssets);
+
+            Object.keys(loadedAssets).forEach(key => {
+                if (!allowedUrls.includes(key)) {
+                    delete loadedAssets[key]; // Hapus referensi agar dibersihkan Garbage Collector browser
+                }
+            });
         }
 
-        // Menggunakan elemen HTML startOverlayImg yang sudah ada untuk memuat asset pertama
+        function getImg(url) {
+            return loadedAssets[url.toLowerCase()] || new Image();
+        }
+
+        // Pemuatan awal game (Universal + Map pertama 'jalurBatu')
+        const initialLoadList = Array.from(new Set([...universalAssets, ...mapSpecificAssets['jalurBatu']]));
+
         if (startOverlayImg) {
             startOverlayImg.onload = () => {
-                Promise.all(allAssetUrls.map(url => preloadImage(url)));
+                preloadImagesList(initialLoadList, (loaded, total) => {
+                    const percent = Math.floor((loaded / total) * 100);
+                    if (loadingText) loadingText.textContent = `Memuat Game... ${percent}%`;
+                }, () => {
+                    isAllAssetsLoaded = true;
+                    if (loadingText) loadingText.style.display = 'none';
+                });
             };
             startOverlayImg.onerror = () => {
-                Promise.all(allAssetUrls.map(url => preloadImage(url)));
+                preloadImagesList(initialLoadList, (loaded, total) => {
+                    const percent = Math.floor((loaded / total) * 100);
+                    if (loadingText) loadingText.textContent = `Memuat Game... ${percent}%`;
+                }, () => {
+                    isAllAssetsLoaded = true;
+                    if (loadingText) loadingText.style.display = 'none';
+                });
             };
             if (startOverlayImg.complete) {
-                Promise.all(allAssetUrls.map(url => preloadImage(url)));
+                preloadImagesList(initialLoadList, (loaded, total) => {
+                    const percent = Math.floor((loaded / total) * 100);
+                    if (loadingText) loadingText.textContent = `Memuat Game... ${percent}%`;
+                }, () => {
+                    isAllAssetsLoaded = true;
+                    if (loadingText) loadingText.style.display = 'none';
+                });
             }
         }
 
@@ -1598,77 +1659,28 @@
         }
 
         restartBtn.addEventListener('click', () => {
-            stats.hp.current = 7; stats.stamina.current = 10; stats.energy.current = 10;
-            slimeBattleHp.current = 2; gameTimeMinutes = 6 * 60; energyLossAccumulator = 0;
-            inventory = [null, null, null]; updateInventoryUI();
-            isGameOver = false; searchCooldownTimer = 0; bedTextCooldownTimer = 0; drinkCooldownTimer = 0;
-            slimeEncounterCooldown = 0; battleSpawnedFromSearch = false;
-            isResting = false; isEating = false; isBerryAnim = false; isFlowerAnim = false; isBubukAnim = false;
-            isFlowerCrafting = false; isBedSleeping = false; isMapWalking = false; isDrinkingAnim = false;
-            cardAnimOverlay.style.display = 'none'; cardBookModal.style.display = 'none'; cardZoomModal.style.display = 'none'; isCardAnimActive = false;
-            battleState = 'none'; turnPhase = 'idle'; battleOverlay.style.display = 'none';
-            battleActionContainer.style.display = 'none'; slimeHpBar.style.display = 'none'; naraHpBar.style.display = 'none';
-            qteBtn.style.display = 'none'; qteMultiContainer.style.display = 'none'; missTextOverlay.style.display = 'none';
-            confirmDialog.style.display = 'none'; restBtn.style.display = 'flex'; bagBtn.style.display = 'flex';
+            // Pindah map kembali ke jalurBatu dengan asset ulang
+            switchMapWithLoading('jalurBatu', () => {
+                stats.hp.current = 7; stats.stamina.current = 10; stats.energy.current = 10;
+                slimeBattleHp.current = 2; gameTimeMinutes = 6 * 60; energyLossAccumulator = 0;
+                inventory = [null, null, null]; updateInventoryUI();
+                isGameOver = false; searchCooldownTimer = 0; bedTextCooldownTimer = 0; drinkCooldownTimer = 0;
+                slimeEncounterCooldown = 0; battleSpawnedFromSearch = false;
+                isResting = false; isEating = false; isBerryAnim = false; isFlowerAnim = false; isBubukAnim = false;
+                isFlowerCrafting = false; isBedSleeping = false; isMapWalking = false; isDrinkingAnim = false;
+                cardAnimOverlay.style.display = 'none'; cardBookModal.style.display = 'none'; cardZoomModal.style.display = 'none'; isCardAnimActive = false;
+                battleState = 'none'; turnPhase = 'idle'; battleOverlay.style.display = 'none';
+                battleActionContainer.style.display = 'none'; slimeHpBar.style.display = 'none'; naraHpBar.style.display = 'none';
+                qteBtn.style.display = 'none'; qteMultiContainer.style.display = 'none'; missTextOverlay.style.display = 'none';
+                confirmDialog.style.display = 'none'; restBtn.style.display = 'flex'; bagBtn.style.display = 'flex';
 
-            currentMap = 'jalurBatu'; updateCollisionMap(colJalurBatuImg);
-            character.x = 530; character.y = 416;
-            checkDrinkChanceOnMapEnter();
-            checkMapBGM();
-            itemNotification.style.display = 'none'; gameOverNaraImg.style.display = 'none'; gameOverOverlay.style.display = 'none';
-            initAllSearchPoints();
+                character.x = 530; character.y = 416;
+                checkDrinkChanceOnMapEnter();
+                checkMapBGM();
+                itemNotification.style.display = 'none'; gameOverNaraImg.style.display = 'none'; gameOverOverlay.style.display = 'none';
+                initAllSearchPoints();
+            });
         });
-
-        function loadImg(src) {
-            const img = new Image();
-            img.src = src.toLowerCase();
-            return img;
-        }
-
-        const bgPagiImg  = loadImg('gubuk-sunyi-p.gif'); 
-        const bgSiangImg = loadImg('gubuk-sunyi.gif');  
-        const bgSoreImg  = loadImg('gubuk-sunyi-s.gif');  
-        const bgMalamImg = loadImg('gubuk-sunyi-m.gif'); 
-        const colMapImage = loadImg('gubuk-sunyi-col.gif'); 
-
-        const bgTerusanPagiImg  = loadImg('terusan-sunyi-p.gif');
-        const bgTerusanSiangImg = loadImg('terusan-sunyi.gif');
-        const bgTerusanSoreImg  = loadImg('terusan-sunyi-s.gif');
-        const bgTerusanMalamImg = loadImg('terusan-sunyi-m.gif');
-        const colTerusanSunyiImg = loadImg('terusan-sunyi-col.gif');
-
-        const bedImg      = loadImg('bed.png');
-        const bookImg     = loadImg('book.png'); 
-        const card3Img    = loadImg('card3.png');
-        const airImg      = loadImg('air.png');     
-        const air1Img     = loadImg('air1.png');    
-        const air2Img     = loadImg('air2.png');    
-        const air3Img     = loadImg('air3.png');
-        const air4Img     = loadImg('air4.png');
-        const minumImg    = loadImg('minum.png');
-        const semakImg    = loadImg('semakf.png'); 
-
-        const slime0Img = loadImg('slime.png'), slime1Img = loadImg('slime1.png'), slime2Img = loadImg('slime2.png'), slime4Img = loadImg('slime4.png');
-        const slimebdImg = loadImg('slimebd.png');
-        const slimebstun1Img = loadImg('slimebstun1.png');
-        const slimebstun2Img = loadImg('slimebstun2.png');
-
-        const narab11Img = loadImg('narab11.png');
-        const narab21Img = loadImg('narab21.png');
-
-        const bgJalurBatuImg = loadImg('jalur-batu.gif'), colJalurBatuImg = loadImg('jalur-batu-col.gif');
-
-        const charDefaultImg = loadImg('nara.png'), charBlinkImg = loadImg('narak.png'), charPoseFront1 = loadImg('narap.png'), charPoseFront2 = loadImg('narap1.png');
-        const charWalk1Img = loadImg('naraw1.png'), charWalk2Img = loadImg('naraw2.png');
-        const charBack0Img = loadImg('narawb1.png'), charBack1Img = loadImg('narawb2.png'), charBack2Img = loadImg('narawb.png');
-        const charRight0Img = loadImg('narawr1.png'), charRight1Img = loadImg('narawr2.png'), charRight2Img = loadImg('narawr3.png'), charRightIdle = loadImg('narawr.png');
-        const charLeft0Img = loadImg('narawl1.png'), charLeft1Img = loadImg('narawl2.png'), charLeft2Img = loadImg('narawl3.png'), charLeftIdle = loadImg('narawl.png');
-        const poseNarabp = loadImg('narabp.png'), poseNarabp1 = loadImg('narabp1.png');
-
-        const cariImg = loadImg('cari.png'), caribImg = loadImg('carib.png'), cari1Img = loadImg('cari1.png'), cari2Img = loadImg('cari2.png'), cari3Img = loadImg('cari3.png'), cari4Img = loadImg('cari4.png'), cari5Img = loadImg('cari5.png'), cari6Img = loadImg('cari6.png'), cari7Img = loadImg('cari7.png'), cari8Img = loadImg('cari8.png'), cari9Img = loadImg('cari9.png');
-        const sitImg = loadImg('sit.png'), sit1Img = loadImg('sit1.png'), sit2Img = loadImg('sit2.png'), sit3Img = loadImg('sit3.png'), sit4Img = loadImg('sit4.png'), sit5Img = loadImg('sit5.png'), sit6Img = loadImg('sit6.png'), sit7Img = loadImg('sit7.png');
-        const berryImg = loadImg('berry.png'), berryMImg = loadImg('berrym.png'), berry1Img = loadImg('berry1.png'), berry3Img = loadImg('berry3.png');
-        const flower1Img = loadImg('flower1.png'), flower2Img = loadImg('flower2.png'), flower3Img = loadImg('flower3.png'), bubuk3Img = loadImg('bubuk3.png');
 
         let character = { x: 530, y: 416, width: 104, height: 154, speed: 1.0, mouseSpeed: 1.0, targetX: null, targetY: null };
 
@@ -1676,22 +1688,23 @@
         const colCtx = colCanvas.getContext('2d', { willReadFrequently: true });
         let colMapReady = false;
 
-        function updateCollisionMap(imageSource) {
+        function updateCollisionMap(colImageSource) {
             colMapReady = false;
             const drawMap = () => {
                 try {
-                    const w = imageSource.naturalWidth || 1200, h = imageSource.naturalHeight || 900;
+                    const w = colImageSource.naturalWidth || 1200, h = colImageSource.naturalHeight || 900;
                     colCanvas.width = w; colCanvas.height = h;
                     colCtx.clearRect(0, 0, w, h);
-                    colCtx.drawImage(imageSource, 0, 0, w, h);
+                    colCtx.drawImage(colImageSource, 0, 0, w, h);
                     colMapReady = true;
                 } catch (e) { colMapReady = true; }
             };
-            if (imageSource.complete && imageSource.naturalWidth !== 0) drawMap();
-            else imageSource.onload = drawMap;
+            if (colImageSource.complete && colImageSource.naturalWidth !== 0) drawMap();
+            else colImageSource.onload = drawMap;
         }
 
-        updateCollisionMap(colJalurBatuImg);
+        // Inisialisasi awal collision map jalurBatu
+        updateCollisionMap(getImg('jalur-batu-col.gif'));
 
         function isWalkable(x, y) {
             if (!colMapReady) return true; 
@@ -1712,8 +1725,8 @@
             return true;
         }
 
-        function getRandomWalkablePointForMap(colImage) {
-            updateCollisionMap(colImage);
+        function getRandomWalkablePointForMap(colImageSource) {
+            updateCollisionMap(colImageSource);
             let rx, ry, isValid = false, attempts = 0;
             while (!isValid) {
                 attempts++;
@@ -1723,8 +1736,8 @@
                 if (attempts > 2000) break; 
             }
             updateCollisionMap(
-                currentMap === 'jalurBatu' ? colJalurBatuImg :
-                currentMap === 'terusanSunyi' ? colTerusanSunyiImg : colMapImage
+                currentMap === 'jalurBatu' ? getImg('jalur-batu-col.gif') :
+                currentMap === 'terusanSunyi' ? getImg('terusan-sunyi-col.gif') : getImg('gubuk-sunyi-col.gif')
             );
             return { x: rx, y: ry };
         }
@@ -1734,7 +1747,7 @@
         function respawnSearchPointRandom(index) {
             let validPoint = false, rx, ry, attempts = 0;
             const naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
-            let targetColImg = currentMap === 'terusanSunyi' ? colTerusanSunyiImg : colMapImage;
+            let targetColImg = currentMap === 'terusanSunyi' ? getImg('terusan-sunyi-col.gif') : getImg('gubuk-sunyi-col.gif');
             while (!validPoint && attempts < 200) {
                 let pt = getRandomWalkablePointForMap(targetColImg);
                 rx = pt.x; ry = pt.y;
@@ -1751,7 +1764,7 @@
             let randChance = Math.random();
             let countToSpawn = isSpawn100Percent ? 2 : ((randChance < 0.15) ? 2 : (randChance < 0.40) ? 1 : 0);
             const naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
-            let targetColImg = currentMap === 'terusanSunyi' ? colTerusanSunyiImg : colMapImage;
+            let targetColImg = currentMap === 'terusanSunyi' ? getImg('terusan-sunyi-col.gif') : getImg('gubuk-sunyi-col.gif');
 
             for (let i = 0; i < countToSpawn; i++) {
                 let validPoint = false, rx, ry;
@@ -1767,7 +1780,7 @@
         let greenSlime = { active: false, isDead: false, fadeTimer: 0, alpha: 1.0, x: 0, y: 0, width: 60, height: 66, animFrame: 0, animTimer: 0, moveIntervalTimer: 0, isMoving: false, targetX: 0, targetY: 0, speed: 9 };
 
         function forceSpawnGreenSlime() {
-            let targetColImg = currentMap === 'terusanSunyi' ? colTerusanSunyiImg : colMapImage;
+            let targetColImg = currentMap === 'terusanSunyi' ? getImg('terusan-sunyi-col.gif') : getImg('gubuk-sunyi-col.gif');
             let pt = getRandomWalkablePointForMap(targetColImg);
             greenSlime.x = pt.x; greenSlime.y = pt.y;
             greenSlime.active = true; greenSlime.isDead = false; greenSlime.fadeTimer = 0; greenSlime.alpha = 1.0;
@@ -1849,7 +1862,7 @@
 
         function drawGreenSlime(targetCtx) {
             if (!greenSlime.active || (currentMap !== 'gubukSunyi' && currentMap !== 'terusanSunyi')) return;
-            let currentImg = greenSlime.isDead ? slime4Img : (greenSlime.animFrame === 1 ? slime1Img : greenSlime.animFrame === 2 ? slime2Img : slime0Img);
+            let currentImg = greenSlime.isDead ? getImg('slime4.png') : (greenSlime.animFrame === 1 ? getImg('slime1.png') : greenSlime.animFrame === 2 ? getImg('slime2.png') : getImg('slime.png'));
             if (currentImg && currentImg.complete && currentImg.naturalWidth !== 0) {
                 targetCtx.save();
                 if (greenSlime.isDead) targetCtx.globalAlpha = greenSlime.alpha;
@@ -1911,10 +1924,10 @@
         let idleFrontTimer = 0, idleFrontState = 'normal', eventFrontTimer = 0;
         
         const searchSequence = [
-            { img: charDefaultImg, duration: 300 }, { img: cari3Img, duration: 300 }, 
-            { img: cari6Img, duration: 300 }, { img: cari7Img, duration: 300 }, 
-            { img: cari8Img, duration: 300 }, { img: cari9Img, duration: 300 }, 
-            { img: cari5Img, duration: 1000 }  
+            { imgKey: 'nara.png', duration: 300 }, { imgKey: 'cari3.png', duration: 300 }, 
+            { imgKey: 'cari6.png', duration: 300 }, { imgKey: 'cari7.png', duration: 300 }, 
+            { imgKey: 'cari8.png', duration: 300 }, { imgKey: 'cari9.png', duration: 300 }, 
+            { imgKey: 'cari5.png', duration: 1000 }  
         ];
         
         let searchIndex = 0, searchTimer = 0, isSearching = false; 
@@ -2216,6 +2229,35 @@
 
         let lastTime = performance.now();
 
+        // Fungsi Helper untuk Pindah Map dengan Proses Loading Aset Baru & Pembersihan Aset Lama
+        function switchMapWithLoading(targetMapName, onMapLoadedCallback) {
+            // Tampilkan teks loading persentase di atas overlay transisi mosaik
+            if (loadingText) {
+                loadingText.textContent = `Memuat Peta... 0%`;
+                loadingText.style.display = 'block';
+            }
+
+            // Gabungkan asset universal dengan asset spesifik map baru
+            const neededAssets = Array.from(new Set([...universalAssets, ...(mapSpecificAssets[targetMapName] || [])]));
+
+            preloadImagesList(neededAssets, (loaded, total) => {
+                const percent = Math.floor((loaded / total) * 100);
+                if (loadingText) loadingText.textContent = `Memuat Peta... ${percent}%`;
+            }, () => {
+                // Sembunyikan loading teks setelah selesai
+                if (loadingText) loadingText.style.display = 'none';
+
+                // Ubah state map aktif
+                currentMap = targetMapName;
+
+                // Bersihkan memori aset map sebelumnya yang sudah tidak dipakai
+                cleanUnusedAssets(targetMapName);
+
+                // Jalankan callback lanjutan (posisi karakter, collision, dll)
+                if (onMapLoadedCallback) onMapLoadedCallback();
+            });
+        }
+
         function update(deltaTime) {
             if (isGameOver) return;
 
@@ -2273,16 +2315,17 @@
 
                 let shiftedSlimeLeftCss = `calc(50% + ${slimeCurrentOffsetLeft}px + 50px)`;
                 
-                qteBtn.style.left = shiftedSlimeLeftCss; 
-                qteBtn.style.top = 'calc(50% - 75px)';
-                
-                qteMultiContainer.style.left = shiftedSlimeLeftCss; 
-                qteMultiContainer.style.top = 'calc(50% - 75px)';
-                
-                missTextOverlay.style.left = `calc(50% + ${slimeCurrentOffsetLeft}px + 60px)`; 
-                missTextOverlay.style.top = 'calc(50% - 50px)';
-
+                // QTE sekarang diposisikan di atas kepala Nara (mengikuti currentNaraXCss / posisi Nara)
                 let currentNaraXCss = `calc(50% + ${naraCurrentOffsetX}px)`;
+                qteBtn.style.left = currentNaraXCss; 
+                qteBtn.style.top = 'calc(50% - 195px)';
+                
+                qteMultiContainer.style.left = currentNaraXCss; 
+                qteMultiContainer.style.top = 'calc(50% - 195px)';
+                
+                missTextOverlay.style.left = `calc(50% + ${naraCurrentOffsetX}px)`; 
+                missTextOverlay.style.top = 'calc(50% - 140px)';
+
                 naraHpBar.style.left = currentNaraXCss; 
                 naraHpBar.style.top = 'calc(50% - 165px)'; 
                 naraHpBar.style.transform = 'translate(-50%, -50%)';
@@ -2299,7 +2342,7 @@
                     if (slimeStunned) {
                         slimeStunAnimTimer += deltaTime;
                         if (slimeStunAnimTimer >= 400) { slimeStunAnimTimer = 0; slimeStunFrame = (slimeStunFrame === 0) ? 1 : 0; }
-                        battleSlimeImg.src = (slimeStunFrame === 0) ? slimebstun1Img.src : slimebstun2Img.src;
+                        battleSlimeImg.src = (slimeStunFrame === 0) ? 'slimebstun1.png' : 'slimebstun2.png';
                     } else {
                         slimeBattleTimer += deltaTime;
                         if (slimeBattleTimer >= 600) { slimeBattleTimer = 0; slimeBattleFrame = (slimeBattleFrame + 1) % 2; battleSlimeImg.src = (slimeBattleFrame === 0) ? 'slimeb1.png' : 'slimeb2.png'; }
@@ -2369,7 +2412,7 @@
                         battleSlimeImg.style.visibility = 'visible'; isSlimeBlinking = false;
                         slimeBattleHp.current = Math.max(0, slimeBattleHp.current - 1); updateBattleHpBarsUI();
                         turnPhase = 'slime_hit_bd'; turnTimer = 0; 
-                        battleSlimeImg.src = slimebdImg.src;
+                        battleSlimeImg.src = 'slimebd.png';
                         playSfx(daggerSfx); 
                     }
                 } else if (turnPhase === 'slime_hit_bd') {
@@ -2609,12 +2652,13 @@
                         if (character.y >= mapWalkTargetY) {
                             mapWalkPhase = 1.5; 
                             startMosaicTransition(() => {
-                                currentMap = mapWalkTargetMap;
-                                checkMapBGM(); 
-                                updateCollisionMap(colTerusanSunyiImg); 
-                                character.x = 640 - (character.width / 2); 
-                                character.y = 160; 
-                                respawnSearchPointSemak(); trySpawnGreenSlime(); checkBerryMSpawn(); 
+                                switchMapWithLoading(mapWalkTargetMap, () => {
+                                    checkMapBGM(); 
+                                    updateCollisionMap(getImg('terusan-sunyi-col.gif')); 
+                                    character.x = 640 - (character.width / 2); 
+                                    character.y = 160; 
+                                    respawnSearchPointSemak(); trySpawnGreenSlime(); checkBerryMSpawn(); 
+                                });
                             });
                         }
                     } else if (mapWalkPhase === 1.5) {
@@ -2636,12 +2680,13 @@
                         if (character.y <= mapWalkTargetY) {
                             mapWalkPhase = 1.5; 
                             startMosaicTransition(() => {
-                                currentMap = mapWalkTargetMap;
-                                checkMapBGM(); 
-                                updateCollisionMap(colMapImage); 
-                                character.x = 640 - (character.width / 2); 
-                                character.y = 720; 
-                                respawnSearchPointSemak(); trySpawnGreenSlime(); checkBerryMSpawn(); 
+                                switchMapWithLoading(mapWalkTargetMap, () => {
+                                    checkMapBGM(); 
+                                    updateCollisionMap(getImg('gubuk-sunyi-col.gif')); 
+                                    character.x = 640 - (character.width / 2); 
+                                    character.y = 720; 
+                                    respawnSearchPointSemak(); trySpawnGreenSlime(); checkBerryMSpawn(); 
+                                });
                             });
                         }
                     } else if (mapWalkPhase === 1.5) {
@@ -2663,11 +2708,12 @@
                         if (character.y <= mapWalkTargetY) {
                             mapWalkPhase = 1.5; 
                             startMosaicTransition(() => {
-                                currentMap = mapWalkTargetMap;
-                                checkMapBGM(); 
-                                updateCollisionMap(colMapImage); 
-                                character.x = 326; character.y = 276; 
-                                respawnSearchPointSemak(); trySpawnGreenSlime(); checkBerryMSpawn(); 
+                                switchMapWithLoading(mapWalkTargetMap, () => {
+                                    checkMapBGM(); 
+                                    updateCollisionMap(getImg('gubuk-sunyi-col.gif')); 
+                                    character.x = 326; character.y = 276; 
+                                    respawnSearchPointSemak(); trySpawnGreenSlime(); checkBerryMSpawn(); 
+                                });
                             });
                         }
                     } else if (mapWalkPhase === 1.5) {
@@ -2689,10 +2735,11 @@
                         if (character.y <= mapWalkTargetY) { 
                             mapWalkPhase = 1.5; 
                             startMosaicTransition(() => {
-                                currentMap = mapWalkTargetMap;
-                                checkMapBGM(); 
-                                updateCollisionMap(colJalurBatuImg);
-                                character.x = 386; character.y = 19; checkDrinkChanceOnMapEnter();
+                                switchMapWithLoading(mapWalkTargetMap, () => {
+                                    checkMapBGM(); 
+                                    updateCollisionMap(getImg('jalur-batu-col.gif'));
+                                    character.x = 386; character.y = 19; checkDrinkChanceOnMapEnter();
+                                });
                             });
                         }
                     } else if (mapWalkPhase === 1.5) {
@@ -2930,8 +2977,8 @@
             }
 
             updateCollisionMap(
-                currentMap === 'jalurBatu' ? colJalurBatuImg :
-                currentMap === 'terusanSunyi' ? colTerusanSunyiImg : colMapImage
+                currentMap === 'jalurBatu' ? getImg('jalur-batu-col.gif') :
+                currentMap === 'terusanSunyi' ? getImg('terusan-sunyi-col.gif') : getImg('gubuk-sunyi-col.gif')
             );
 
             if (isWalkable(nextX + (character.width / 2), nextY + character.height)) {
@@ -2979,9 +3026,9 @@
             }
 
             if (currentMap === 'jalurBatu') {
-                let airW = air2Img.naturalWidth || 60, airH = air2Img.naturalHeight || 60;
+                let airW = getImg('air2.png').naturalWidth || 60, airH = getImg('air2.png').naturalHeight || 60;
                 let distDrink = Math.sqrt(Math.pow(naraCenterX - (batuAirPos.x + airW/2), 2) + Math.pow(naraCenterY - (batuAirPos.y + airH/2), 2));
-                let bedW = bedImg.naturalWidth || 100, bedH = bedImg.naturalHeight || 100;
+                let bedW = getImg('bed.png').naturalWidth || 100, bedH = getImg('bed.png').naturalHeight || 100;
                 let distBed = Math.sqrt(Math.pow(naraCenterX - (bedPos.x + bedW/2), 2) + Math.pow(naraCenterY - (bedPos.y + bedH/2), 2));
                 let distBook = Math.sqrt(Math.pow(naraCenterX - bookPos.x, 2) + Math.pow(naraCenterY - bookPos.y, 2));
 
@@ -3117,12 +3164,21 @@
             targetCtx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (currentMap === 'jalurBatu') {
+                let bgJalurBatuImg = getImg('jalur-batu.gif');
                 if (bgJalurBatuImg.complete && bgJalurBatuImg.naturalWidth !== 0) targetCtx.drawImage(bgJalurBatuImg, 0, 0, canvas.width, canvas.height);
                 else { targetCtx.fillStyle = '#333'; targetCtx.fillRect(0, 0, canvas.width, canvas.height); }
+                
+                let bedImg = getImg('bed.png');
                 if (bedImg.complete && bedImg.naturalWidth !== 0) targetCtx.drawImage(bedImg, bedPos.x, bedPos.y);
+                
+                let bookImg = getImg('book.png');
                 if (bookImg.complete && bookImg.naturalWidth !== 0) targetCtx.drawImage(bookImg, bookPos.x, bookPos.y);
+                
+                let air2Img = getImg('air2.png');
                 if (air2Img.complete && air2Img.naturalWidth !== 0) targetCtx.drawImage(air2Img, batuAirPos.x, batuAirPos.y);
 
+                let air1Img = getImg('air1.png');
+                let airImg = getImg('air.png');
                 if (isDrinkingAnim || isWaterTransitioning) {
                     if (isWaterTransitioning && air1Img.complete && air1Img.naturalWidth !== 0) {
                         targetCtx.save(); targetCtx.globalAlpha = 1 - waterTransitionAlpha; targetCtx.drawImage(air1Img, batuAirPos.x, batuAirPos.y); targetCtx.restore();
@@ -3132,6 +3188,8 @@
                 }
 
                 let startY = batuAirPos.y - 120, dropX = batuAirPos.x + 50; 
+                let air3Img = getImg('air3.png');
+                let air4Img = getImg('air4.png');
                 if (waterDropState === 'falling' && air3Img.complete && air3Img.naturalWidth !== 0) {
                     targetCtx.drawImage(air3Img, dropX, startY + waterDropOffsetY);
                 } else if (waterDropState === 'splash' && air4Img.complete && air4Img.naturalWidth !== 0) {
@@ -3140,13 +3198,10 @@
             } else {
                 let hours = gameTimeMinutes / 60; 
 
-                let curPagi = bgPagiImg, curSiang = bgSiangImg, curSore = bgSoreImg, curMalam = bgMalamImg;
-                if (currentMap === 'terusanSunyi') {
-                    curPagi = bgTerusanPagiImg;
-                    curSiang = bgTerusanSiangImg;
-                    curSore = bgTerusanSoreImg;
-                    curMalam = bgTerusanMalamImg;
-                }
+                let curPagi = getImg(currentMap === 'terusanSunyi' ? 'terusan-sunyi-p.gif' : 'gubuk-sunyi-p.gif');
+                let curSiang = getImg(currentMap === 'terusanSunyi' ? 'terusan-sunyi.gif' : 'gubuk-sunyi.gif');
+                let curSore = getImg(currentMap === 'terusanSunyi' ? 'terusan-sunyi-s.gif' : 'gubuk-sunyi-s.gif');
+                let curMalam = getImg(currentMap === 'terusanSunyi' ? 'terusan-sunyi-m.gif' : 'gubuk-sunyi-m.gif');
 
                 let currentBgImg = curMalam, nextBgImg = curMalam, transitionAlpha = 0;
 
@@ -3166,10 +3221,12 @@
                 }
             }
 
+            let berryMImg = getImg('berrym.png');
             if (currentMap === 'gubukSunyi' && berryM.active && berryMImg.complete && berryMImg.naturalWidth !== 0) {
                 targetCtx.drawImage(berryMImg, berryM.x - (berryM.width / 2), berryM.y - (berryM.height / 2), berryM.width, berryM.height);
             }
 
+            let semakImg = getImg('semakf.png');
             if ((currentMap === 'gubukSunyi' || currentMap === 'terusanSunyi') && semakImg.complete && semakImg.naturalWidth !== 0) {
                 searchPointsSemak.forEach(pt => {
                     if (pt.active && isWalkable(pt.x, pt.y)) targetCtx.drawImage(semakImg, pt.x - ((semakImg.naturalWidth || 48) / 2), pt.y - ((semakImg.naturalHeight || 48) / 2));
@@ -3179,51 +3236,55 @@
             if (greenSlime.active && (currentMap === 'gubukSunyi' || currentMap === 'terusanSunyi') && battleState === 'none') drawGreenSlime(targetCtx);
 
             if (battleState === 'none') {
-                let currentImg = charDefaultImg;
+                let currentImg = getImg('nara.png');
                 
                 if (isCardAnimActive) {
                     if (cardAnimTimer < 300) {
-                        currentImg = charDefaultImg; 
+                        currentImg = getImg('nara.png'); 
                     } else {
+                        let card3Img = getImg('card3.png');
                         if (card3Img.complete && card3Img.naturalWidth !== 0) {
                             currentImg = card3Img; 
                         } else {
-                            currentImg = charDefaultImg;
+                            currentImg = getImg('nara.png');
                         }
                     }
                 } else if (isMapWalking) {
-                    currentImg = lastFacing === 'back' ? (animStep === 0 ? charBack0Img : animStep === 1 ? charBack1Img : charBack2Img) : (animStep === 0 ? charWalk1Img : animStep === 1 ? charWalk2Img : charDefaultImg);
+                    currentImg = lastFacing === 'back' ? (animStep === 0 ? getImg('narawb1.png') : animStep === 1 ? getImg('narawb2.png') : getImg('narawb.png')) : (animStep === 0 ? getImg('naraw1.png') : animStep === 1 ? getImg('naraw2.png') : getImg('nara.png'));
                 } else if (isDrinkingAnim) {
-                    currentImg = (drinkStep === 0) ? cari4Img : minumImg;
+                    currentImg = (drinkStep === 0) ? getImg('cari4.png') : getImg('minum.png');
                 } else if (isBedSleeping) {
-                    currentImg = (bedSleepPhase === 1) ? cari2Img : (bedSleepPhase === 2) ? sit5Img : (bedPhase3SubStep === 0) ? sit6Img : sit7Img;
+                    currentImg = (bedSleepPhase === 1) ? getImg('cari2.png') : (bedSleepPhase === 2) ? getImg('sit5.png') : (bedPhase3SubStep === 0) ? getImg('sit6.png') : getImg('sit7.png');
                 } else if (isFlowerCrafting) {
-                    currentImg = (flowerCraftStep === 0) ? flower1Img : (flowerCraftStep === 1) ? flower2Img : (flowerCraftResult === 'success' ? bubuk3Img : charDefaultImg);
+                    currentImg = (flowerCraftStep === 0) ? getImg('flower1.png') : (flowerCraftStep === 1) ? getImg('flower2.png') : (flowerCraftResult === 'success' ? getImg('bubuk3.png') : getImg('nara.png'));
                 } else if (isBerryAnim) {
-                    currentImg = berry3Img.complete && berry3Img.naturalWidth !== 0 ? berry3Img : charDefaultImg;
+                    let berry3Img = getImg('berry3.png');
+                    currentImg = berry3Img.complete && berry3Img.naturalWidth !== 0 ? berry3Img : getImg('nara.png');
                 } else if (isFlowerAnim) {
-                    currentImg = flower3Img.complete && flower3Img.naturalWidth !== 0 ? flower3Img : charDefaultImg;
+                    let flower3Img = getImg('flower3.png');
+                    currentImg = flower3Img.complete && flower3Img.naturalWidth !== 0 ? flower3Img : getImg('nara.png');
                 } else if (isBubukAnim) {
-                    currentImg = bubuk3Img.complete && bubuk3Img.naturalWidth !== 0 ? bubuk3Img : charDefaultImg;
+                    let bubuk3Img = getImg('bubuk3.png');
+                    currentImg = bubuk3Img.complete && bubuk3Img.naturalWidth !== 0 ? bubuk3Img : getImg('nara.png');
                 } else if (isEating) {
-                    currentImg = (eatStep === 0) ? berryImg : berry1Img;
+                    currentImg = (eatStep === 0) ? getImg('berry.png') : getImg('berry1.png');
                 } else if (isResting) {
                     let rKey = restSequence[restSeqIndex].imgKey;
-                    currentImg = rKey === 'sit' ? sitImg : rKey === 'sit1' ? sit1Img : rKey === 'sit2' ? sit2Img : rKey === 'sit3' ? sit3Img : rKey === 'sit4' ? sit4Img : sit5Img;
+                    currentImg = rKey === 'sit' ? getImg('sit.png') : rKey === 'sit1' ? getImg('sit1.png') : rKey === 'sit2' ? getImg('sit2.png') : rKey === 'sit3' ? getImg('sit3.png') : rKey === 'sit4' ? getImg('sit4.png') : getImg('sit5.png');
                 } else if (isSearching) {
-                    currentImg = searchSequence[searchIndex].img;
+                    currentImg = getImg(searchSequence[searchIndex].imgKey);
                 } else {
                     let isMoving = isAnyMovementPressed() || (character.targetX !== null) || (stepMoveTimer > 0);
                     if (isMoving) {
-                        if (lastFacing === 'front') currentImg = animStep === 0 ? charWalk1Img : animStep === 1 ? charWalk2Img : charDefaultImg;
-                        else if (lastFacing === 'back') currentImg = animStep === 0 ? charBack0Img : animStep === 1 ? charBack1Img : charBack2Img;
-                        else if (lastFacing === 'right') currentImg = animStep === 0 ? charRight0Img : animStep === 1 ? charRight1Img : charRight2Img;
-                        else currentImg = animStep === 0 ? charLeft0Img : animStep === 1 ? charLeft1Img : charLeft2Img;
+                        if (lastFacing === 'front') currentImg = animStep === 0 ? getImg('naraw1.png') : animStep === 1 ? getImg('naraw2.png') : getImg('nara.png');
+                        else if (lastFacing === 'back') currentImg = animStep === 0 ? getImg('narawb1.png') : animStep === 1 ? getImg('narawb2.png') : getImg('narawb.png');
+                        else if (lastFacing === 'right') currentImg = animStep === 0 ? getImg('narawr1.png') : animStep === 1 ? getImg('narawr2.png') : getImg('narawr3.png');
+                        else currentImg = animStep === 0 ? getImg('narawl1.png') : animStep === 1 ? getImg('narawl2.png') : getImg('narawl3.png');
                     } else {
-                        if (lastFacing === 'front') currentImg = idleFrontState === 'blink' ? charBlinkImg : idleFrontState === 'pose1' ? charPoseFront1 : idleFrontState === 'pose2' ? charPoseFront2 : charDefaultImg;
-                        else if (lastFacing === 'back') currentImg = isShowingBackPose ? (backPoseStep % 2 === 0 ? poseNarabp : poseNarabp1) : charBack2Img;
-                        else if (lastFacing === 'right') currentImg = charRightIdle;
-                        else currentImg = charLeftIdle;
+                        if (lastFacing === 'front') currentImg = idleFrontState === 'blink' ? getImg('narak.png') : idleFrontState === 'pose1' ? getImg('narap.png') : idleFrontState === 'pose2' ? getImg('narap1.png') : getImg('nara.png');
+                        else if (lastFacing === 'back') currentImg = isShowingBackPose ? (backPoseStep % 2 === 0 ? getImg('narabp.png') : getImg('narabp1.png')) : getImg('narawb.png');
+                        else if (lastFacing === 'right') currentImg = getImg('narawr.png');
+                        else currentImg = getImg('narawl.png');
                     }
                 }
 
