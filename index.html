@@ -53,6 +53,23 @@
             display: block;
         }
 
+        /* Loading Indicator di Layar Utama */
+        #loadingText {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 301;
+            font-size: 16px;
+            font-weight: bold;
+            color: #f4ecd8;
+            background: rgba(20, 15, 10, 0.85);
+            padding: 8px 16px;
+            border: 2px solid #a37c57;
+            border-radius: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
         /* --- Audio Control UI --- */
         #audioControlUI {
             position: absolute;
@@ -564,7 +581,8 @@
     <div class="game-container">
         <!-- Start Screen Wallpaper Overlay -->
         <div id="startOverlay">
-            <img src="start1.gif" alt="Start Screen Wallpaper">
+            <img id="startOverlayImg" src="start1.gif" alt="Start Screen Wallpaper">
+            <div id="loadingText">Memuat Game... 0%</div>
         </div>
 
         <!-- Audio BGM & SFX Eksternal -->
@@ -708,8 +726,77 @@
 
     <script>
         const startOverlay = document.getElementById('startOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const startOverlayImg = document.getElementById('startOverlayImg');
         let isStartScreenActive = true;
+        let isAllAssetsLoaded = false;
         let startScreenTimer = 0;
+
+        /* --- PRELOADER ASSETS SYSTEM --- */
+        const allAssetUrls = [
+            'gubuk-sunyi-p.gif', 'gubuk-sunyi.gif', 'gubuk-sunyi-s.gif', 'gubuk-sunyi-m.gif', 'gubuk-sunyi-col.gif',
+            'terusan-sunyi-p.gif', 'terusan-sunyi.gif', 'terusan-sunyi-s.gif', 'terusan-sunyi-m.gif', 'terusan-sunyi-col.gif',
+            'jalur-batu.gif', 'jalur-batu-col.gif',
+            'bed.png', 'book.png', 'card3.png', 'air.png', 'air1.png', 'air2.png', 'air3.png', 'air4.png', 'minum.png', 'semakf.png',
+            'berry.png', 'berrym.png', 'berry1.png', 'berry3.png', 'flower1.png', 'flower2.png', 'flower3.png', 'bubuk3.png',
+            'slime.png', 'slime1.png', 'slime2.png', 'slime4.png', 'slimebd.png', 'slimebstun1.png', 'slimebstun2.png',
+            'slimeb1.png', 'slimeb2.png', 'slimeba1.png', 'slimeba2.png',
+            'bs0.gif', 'bs1.gif', 'bs2.gif', 'bs3.gif', 'bs4.gif',
+            'nara.png', 'narak.png', 'narap.png', 'narap1.png', 'naraw1.png', 'naraw2.png',
+            'narawb1.png', 'narawb2.png', 'narawb.png', 'narawr1.png', 'narawr2.png', 'narawr3.png', 'narawr.png',
+            'narawl1.png', 'narawl2.png', 'narawl3.png', 'narawl.png', 'narabp.png', 'narabp1.png',
+            'narabi.png', 'narabi1.png', 'narab1.png', 'narab11.png', 'narab2.png', 'narab21.png',
+            'narabd.png', 'narabd2.png', 'narabw1.png', 'narabw2.png', 'narabes.png', 'narabes1.png',
+            'narabdg.png', 'narabdam.png', 'narabk1.png', 'narabp2.png',
+            'cari.png', 'carib.png', 'cari1.png', 'cari2.png', 'cari3.png', 'cari4.png', 'cari5.png', 'cari6.png', 'cari7.png', 'cari8.png', 'cari9.png',
+            'sit.png', 'sit1.png', 'sit2.png', 'sit3.png', 'sit4.png', 'sit5.png', 'sit6.png', 'sit7.png',
+            'judul.png', 'tas.png', 'berryic.png', 'floweric.png', 'bubuk.png',
+            'card25.png', 'card35.png', 'card40.png', 'card45.png', 'arrowbawah.png', 'arrowatas.png'
+        ];
+
+        let loadedAssetsCount = 0;
+        const totalAssets = allAssetUrls.length;
+
+        function preloadImage(url) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    loadedAssetsCount++;
+                    updateLoadingProgress();
+                    resolve(img);
+                };
+                img.onerror = () => {
+                    loadedAssetsCount++;
+                    updateLoadingProgress();
+                    resolve(img);
+                };
+                img.src = url.toLowerCase();
+            });
+        }
+
+        function updateLoadingProgress() {
+            const percent = Math.floor((loadedAssetsCount / totalAssets) * 100);
+            if (loadingText) {
+                loadingText.textContent = `Memuat Game... ${percent}%`;
+            }
+            if (loadedAssetsCount >= totalAssets) {
+                isAllAssetsLoaded = true;
+                if (loadingText) loadingText.style.display = 'none';
+            }
+        }
+
+        // Menggunakan elemen HTML startOverlayImg yang sudah ada untuk memuat asset pertama
+        if (startOverlayImg) {
+            startOverlayImg.onload = () => {
+                Promise.all(allAssetUrls.map(url => preloadImage(url)));
+            };
+            startOverlayImg.onerror = () => {
+                Promise.all(allAssetUrls.map(url => preloadImage(url)));
+            };
+            if (startOverlayImg.complete) {
+                Promise.all(allAssetUrls.map(url => preloadImage(url)));
+            }
+        }
 
         const exploreAudio = document.getElementById('exploreAudio');
         const battleAudio = document.getElementById('battleAudio');
@@ -2132,10 +2219,9 @@
         function update(deltaTime) {
             if (isGameOver) return;
 
-            // Timer Start Screen (Wallpaper 4 Detik)
             if (isStartScreenActive) {
                 startScreenTimer += deltaTime;
-                if (startScreenTimer >= 4000) {
+                if (startScreenTimer >= 4000 && isAllAssetsLoaded) {
                     isStartScreenActive = false;
                     startMosaicTransition(() => {
                         startOverlay.style.display = 'none';
@@ -2318,7 +2404,6 @@
                     battleNaraImg.src = 'narabd.png';
                     
                     if (slimeStunned) {
-                        // Jika Slime dalam kondisi STUN: Tanpa narabd2.png, langsung kembali
                         if (turnTimer >= 500) {
                             slimeCurrentOffsetLeft = slimeStartOffsetLeft;
                             turnPhase = 'nara_backward';
