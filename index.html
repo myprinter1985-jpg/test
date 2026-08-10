@@ -36,6 +36,23 @@
             z-index: 1;
         }
 
+        /* --- Start Screen Wallpaper Overlay --- */
+        #startOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1200px;
+            height: 900px;
+            z-index: 300;
+            pointer-events: auto;
+        }
+        #startOverlay img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
         /* --- Audio Control UI --- */
         #audioControlUI {
             position: absolute;
@@ -110,6 +127,7 @@
         #toggleSpawn100Btn { color: #facc15; border-color: #eab308; }
         #togglePortalDistBtn { color: #2dd4bf; border-color: #14b8a6; }
         #subEnergyBtn { color: #f97316; }
+        #toggleEnergySpeedBtn { color: #ef4444; border-color: #dc2626; }
         #spawnSlimeBtn { color: #a3e635; }
         #addTimeBtn { color: #f4ecd8; }
 
@@ -544,11 +562,17 @@
 <body>
 
     <div class="game-container">
+        <!-- Start Screen Wallpaper Overlay -->
+        <div id="startOverlay">
+            <img src="start1.gif" alt="Start Screen Wallpaper">
+        </div>
+
         <!-- Audio BGM & SFX Eksternal -->
         <audio id="exploreAudio" src="explore.mp3" preload="auto" loop></audio>
         <audio id="battleAudio" src="battle.mp3" preload="auto" loop></audio>
         <audio id="daggerSfx" src="dagger.mp3" preload="auto"></audio>
         <audio id="slimeaSfx" src="slimea.mp3" preload="auto"></audio>
+        <audio id="blockSfx" src="block.mp3" preload="auto"></audio>
         <audio id="missSfx" src="miss.mp3" preload="auto"></audio>
         <audio id="dapatSfx" src="dapat.mp3" preload="auto"></audio>
         <audio id="waterSfx" src="water.mp3" preload="auto"></audio>
@@ -564,6 +588,7 @@
             <button id="toggleSpawn100Btn" class="dev-tool-btn" title="Atur Semua Spawn Chance jadi 100% / Normal">Spawn: Normal</button>
             <button id="togglePortalDistBtn" class="dev-tool-btn" title="Toggle Jarak Muncul Tombol Pindah Map (Normal / 2000px)">Portal: Normal</button>
             <button id="subEnergyBtn" class="dev-tool-btn" title="Kurangi Energy sebanyak -5">-5 Energy</button>
+            <button id="toggleEnergySpeedBtn" class="dev-tool-btn" title="Toggle Kecepatan Pengurangan Energi (Normal / Fast)">Energy Speed: Normal</button>
             <button id="spawnSlimeBtn" class="dev-tool-btn" title="Munculkan Slime di Map">Spawn Slime</button>
             <button id="addTimeBtn" class="dev-tool-btn" title="Tambah 4 Jam Waktu Game">+4 Jam</button>
             <div id="coordUI">X: <span id="coordX">0</span> | Y: <span id="coordY">0</span></div>
@@ -682,10 +707,15 @@
     </div>
 
     <script>
+        const startOverlay = document.getElementById('startOverlay');
+        let isStartScreenActive = true;
+        let startScreenTimer = 0;
+
         const exploreAudio = document.getElementById('exploreAudio');
         const battleAudio = document.getElementById('battleAudio');
         const daggerSfx = document.getElementById('daggerSfx');
         const slimeaSfx = document.getElementById('slimeaSfx');
+        const blockSfx = document.getElementById('blockSfx');
         const missSfx = document.getElementById('missSfx');
         const dapatSfx = document.getElementById('dapatSfx');
         const waterSfx = document.getElementById('waterSfx');
@@ -702,6 +732,7 @@
         battleAudio.volume = parseFloat(bgmVolumeSlider.value);
         daggerSfx.volume = 0.3;
         slimeaSfx.volume = 0.4;
+        blockSfx.volume = 0.4;
         missSfx.volume = 0.4;
         dapatSfx.volume = 0.3;
         waterSfx.volume = 0.4;
@@ -744,7 +775,7 @@
         bgmVolumeSlider.addEventListener('input', (e) => { 
             let vol = parseFloat(e.target.value);
             exploreAudio.volume = vol; battleAudio.volume = vol;
-            daggerSfx.volume = vol; slimeaSfx.volume = vol; missSfx.volume = vol;
+            daggerSfx.volume = vol; slimeaSfx.volume = vol; blockSfx.volume = vol; missSfx.volume = vol;
             dapatSfx.volume = vol; waterSfx.volume = vol; makanSfx.volume = vol; winSfx.volume = vol;
             gameOverSfx.volume = vol;
         });
@@ -755,7 +786,7 @@
 
         function initAudioOnFirstUserInteraction() {
             checkMapBGM();
-            const allSfxList = [waterSfx, makanSfx, dapatSfx, daggerSfx, slimeaSfx, missSfx, winSfx, gameOverSfx];
+            const allSfxList = [waterSfx, makanSfx, dapatSfx, daggerSfx, slimeaSfx, blockSfx, missSfx, winSfx, gameOverSfx];
             allSfxList.forEach(sfx => {
                 if(sfx) {
                     sfx.play().then(() => {
@@ -826,6 +857,7 @@
         let cardDropRateProb = 0.01; 
         let portalMaxDistance = 60;   
         let isSpawn100Percent = false; 
+        let energySpeedMode = 'normal';
 
         const togglePortalDistBtn = document.getElementById('togglePortalDistBtn');
         togglePortalDistBtn.addEventListener('click', (e) => {
@@ -906,6 +938,22 @@
         subEnergyBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             modifyStat('energy', -5);
+        });
+
+        const toggleEnergySpeedBtn = document.getElementById('toggleEnergySpeedBtn');
+        toggleEnergySpeedBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (energySpeedMode === 'normal') {
+                energySpeedMode = 'fast';
+                toggleEnergySpeedBtn.textContent = 'Energy Speed: Fast';
+                toggleEnergySpeedBtn.style.color = '#f87171';
+                toggleEnergySpeedBtn.style.borderColor = '#ef4444';
+            } else {
+                energySpeedMode = 'normal';
+                toggleEnergySpeedBtn.textContent = 'Energy Speed: Normal';
+                toggleEnergySpeedBtn.style.color = '#ef4444';
+                toggleEnergySpeedBtn.style.borderColor = '#dc2626';
+            }
         });
 
         const battleOverlay = document.getElementById('battleOverlay');
@@ -1267,6 +1315,9 @@
 
         const naraStartOffsetX = 150; 
         let naraCurrentOffsetX = naraStartOffsetX;
+        let naraPreDodgeOffsetX = naraStartOffsetX;
+        let naraAttackVariation = 1;
+
         const slimeStartOffsetLeft = -150;
         let slimeCurrentOffsetLeft = slimeStartOffsetLeft;
 
@@ -1316,7 +1367,7 @@
         function useItemInSlot(slotIndex) {
             if (slotIndex < 0 || slotIndex >= 3) return;
             let slotData = inventory[slotIndex];
-            if (!slotData || isGameOver || isEating || isResting || isSearching || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            if (!slotData || isGameOver || isEating || isResting || isSearching || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || isStartScreenActive) return;
 
             if (slotData.item === 'berry' || slotData.item === 'bubuk') {
                 slotData.count--;
@@ -1405,6 +1456,37 @@
             if (stats.hp.current <= 0) triggerGameOver();
         }
 
+        function updateEnergy(deltaTime) {
+            if (!isResting && !isBedSleeping && !isStartScreenActive) {
+                let gameMinutesElapsed;
+                if (energySpeedMode === 'fast') {
+                    gameMinutesElapsed = (deltaTime / 1000) * 12;
+                } else {
+                    gameMinutesElapsed = (deltaTime / 1000) * (30 / 60);
+                }
+
+                let speedThreshold = 60; 
+                energyLossAccumulator += gameMinutesElapsed;
+
+                if (energyLossAccumulator >= speedThreshold) {
+                    let cycles = Math.floor(energyLossAccumulator / speedThreshold);
+                    energyLossAccumulator %= speedThreshold;
+
+                    if (stats.energy.current > 0) {
+                        modifyStat('energy', -cycles);
+                    } else {
+                        for (let i = 0; i < cycles; i++) {
+                            if (Math.random() < 0.5) {
+                                modifyStat('hp', -1);
+                            }
+                        }
+                    }
+                }
+            } else {
+                energyLossAccumulator = 0;
+            }
+        }
+
         function triggerGameOver() {
             isGameOver = true;
             playSfx(gameOverSfx);
@@ -1483,6 +1565,9 @@
         const slimebdImg = loadImg('slimebd.png');
         const slimebstun1Img = loadImg('slimebstun1.png');
         const slimebstun2Img = loadImg('slimebstun2.png');
+
+        const narab11Img = loadImg('narab11.png');
+        const narab21Img = loadImg('narab21.png');
 
         const bgJalurBatuImg = loadImg('jalur-batu.gif'), colJalurBatuImg = loadImg('jalur-batu-col.gif');
 
@@ -1692,7 +1777,7 @@
         }
 
         function triggerBattle(fromSearch = false) {
-            if (battleState !== 'none' || isGameOver || slimeEncounterCooldown > 0 || greenSlime.isDead) return;
+            if (battleState !== 'none' || isGameOver || slimeEncounterCooldown > 0 || greenSlime.isDead || isStartScreenActive) return;
 
             playBattleBGM();
 
@@ -1750,7 +1835,7 @@
         let isBerryAnim = false, berryAnimTimer = 0, isFlowerAnim = false, flowerAnimTimer = 0;
 
         function triggerRest() {
-            if (isGameOver || isSearching || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            if (isGameOver || isSearching || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || isStartScreenActive) return;
             let isMoving = isAnyMovementPressed() || (character.targetX !== null) || (stepMoveTimer > 0);
             if (!isMoving && !isResting) {
                 isResting = true; restTimer = 0; restStaminaTimer = 0; restEnergyTimer = 0; restSeqIndex = 0;
@@ -1762,7 +1847,7 @@
         restBtn.addEventListener('click', (e) => { e.stopPropagation(); triggerRest(); });
 
         function triggerBedSleep() {
-            if (isGameOver || isSearching || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || stats.energy.current > 5) return;
+            if (isGameOver || isSearching || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || stats.energy.current > 5 || isStartScreenActive) return;
             let isMoving = isAnyMovementPressed() || (character.targetX !== null) || (stepMoveTimer > 0);
             if (!isMoving) {
                 isBedSleeping = true; bedSleepPhase = 1; bedSleepTimer = 0; bedPhase3SubTimer = 0; bedPhase3SubStep = 0;
@@ -1772,7 +1857,7 @@
         }
 
         function triggerDrink() {
-            if (isGameOver || isSearching || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || !canDrink || drinkCooldownTimer > 0) return;
+            if (isGameOver || isSearching || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || !canDrink || drinkCooldownTimer > 0 || isStartScreenActive) return;
             let isMoving = isAnyMovementPressed() || (character.targetX !== null) || (stepMoveTimer > 0);
             if (!isMoving) {
                 isDrinkingAnim = true; drinkStep = 0; drinkTimer = 0; drinkCooldownTimer = 20000; 
@@ -1794,7 +1879,7 @@
         }
 
         function triggerSearch(type, index) {
-            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || isStartScreenActive) return;
             if (searchCooldownTimer > 0 || stats.stamina.current <= 0) return;
             let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
 
@@ -1831,7 +1916,7 @@
         let isTransitionActive = false;
 
         function executeTransition() {
-            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || isStartScreenActive) return;
             let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
             if (Math.sqrt(Math.pow(naraCenterX - transitionPoint.x, 2) + Math.pow(naraCenterY - transitionPoint.y, 2)) <= portalMaxDistance && currentMap === 'gubukSunyi') {
                 transitionBtn.style.display = 'none'; isTransitionActive = false;
@@ -1845,7 +1930,7 @@
         let isReturnActive = false;
 
         function executeReturn() {
-            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || isStartScreenActive) return;
             let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
             if (Math.sqrt(Math.pow(naraCenterX - returnPoint.x, 2) + Math.pow(naraCenterY - returnPoint.y, 2)) <= portalMaxDistance && currentMap === 'jalurBatu') {
                 returnBtn.style.display = 'none'; isReturnActive = false;
@@ -1862,7 +1947,7 @@
         let isPortalHutanSunyiActive = false;
 
         function executePortalTerusanSunyi() {
-            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || isStartScreenActive) return;
             let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
             if (Math.sqrt(Math.pow(naraCenterX - portalTerusanSunyiPos.x, 2) + Math.pow(naraCenterY - portalTerusanSunyiPos.y, 2)) <= portalMaxDistance && currentMap === 'gubukSunyi') {
                 portalTerusanSunyiBtn.style.display = 'none'; isPortalTerusanSunyiActive = false;
@@ -1873,7 +1958,7 @@
         portalTerusanSunyiBtn.addEventListener('click', (e) => { e.stopPropagation(); executePortalTerusanSunyi(); });
 
         function executePortalHutanSunyi() {
-            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none') return;
+            if (isGameOver || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isResting || isBedSleeping || isMapWalking || isDrinkingAnim || battleState !== 'none' || isStartScreenActive) return;
             let naraCenterX = character.x + (character.width / 2), naraCenterY = character.y + (character.height / 2);
             if (Math.sqrt(Math.pow(naraCenterX - portalHutanSunyiPos.x, 2) + Math.pow(naraCenterY - portalHutanSunyiPos.y, 2)) <= portalMaxDistance && currentMap === 'terusanSunyi') {
                 portalHutanSunyiBtn.style.display = 'none'; isPortalHutanSunyiActive = false;
@@ -1891,7 +1976,7 @@
         function resetMovementKeys() { keys.up = false; keys.down = false; keys.left = false; keys.right = false; }
 
         window.addEventListener('keydown', (e) => {
-            if (isGameOver) return;
+            if (isGameOver || isStartScreenActive) return;
 
             if (confirmDialog.style.display === 'flex') {
                 if (e.key === 'e' || e.key === 'E') {
@@ -1976,7 +2061,7 @@
         });
 
         canvas.addEventListener('click', (e) => {
-            if (isGameOver || battleState !== 'none' || isSearching || isResting || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim) return;
+            if (isGameOver || battleState !== 'none' || isSearching || isResting || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim || isStartScreenActive) return;
             const rect = canvas.getBoundingClientRect();
             const clickX = e.clientX - rect.left, clickY = e.clientY - rect.top;
 
@@ -2004,7 +2089,7 @@
         });
 
         canvas.addEventListener('mousemove', (e) => {
-            if (isGameOver || battleState !== 'none') {
+            if (isGameOver || battleState !== 'none' || isStartScreenActive) {
                 hideFloatingTripleBar();
                 return;
             }
@@ -2024,7 +2109,7 @@
         });
 
         canvas.addEventListener('dblclick', (e) => {
-            if (isGameOver || battleState !== 'none' || isSearching || isResting || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim) return;
+            if (isGameOver || battleState !== 'none' || isSearching || isResting || isEating || isBerryAnim || isFlowerAnim || isBubukAnim || isFlowerCrafting || isBedSleeping || isMapWalking || isDrinkingAnim || isStartScreenActive) return;
             const rect = canvas.getBoundingClientRect();
             const clickX = e.clientX - rect.left, clickY = e.clientY - rect.top;
 
@@ -2047,10 +2132,23 @@
         function update(deltaTime) {
             if (isGameOver) return;
 
+            // Timer Start Screen (Wallpaper 4 Detik)
+            if (isStartScreenActive) {
+                startScreenTimer += deltaTime;
+                if (startScreenTimer >= 4000) {
+                    isStartScreenActive = false;
+                    startMosaicTransition(() => {
+                        startOverlay.style.display = 'none';
+                    });
+                }
+            }
+
             coordXSpan.textContent = Math.round(character.x + character.width / 2);
             coordYSpan.textContent = Math.round(character.y + character.height);
 
             updateMosaicTransition(deltaTime);
+
+            if (isStartScreenActive) return;
 
             if (drinkCooldownTimer > 0) { drinkCooldownTimer -= deltaTime; if (drinkCooldownTimer <= 0) drinkCooldownTimer = 0; }
             if (slimeEncounterCooldown > 0) { slimeEncounterCooldown -= deltaTime; if (slimeEncounterCooldown <= 0) slimeEncounterCooldown = 0; }
@@ -2082,16 +2180,34 @@
                 }
                 return;
             } else if (battleState === 'active') {
-                let currentSlimeLeftCss = `calc(50% + ${slimeCurrentOffsetLeft}px)`;
-                slimeHpBar.style.left = currentSlimeLeftCss; slimeHpBar.style.top = 'calc(50% - 52px)'; slimeHpBar.style.transform = 'translate(-50%, -50%)';
-                qteBtn.style.left = currentSlimeLeftCss; qteBtn.style.top = 'calc(50% - 75px)';
-                qteMultiContainer.style.left = currentSlimeLeftCss; qteMultiContainer.style.top = 'calc(50% - 75px)';
-                missTextOverlay.style.left = `calc(50% + ${slimeCurrentOffsetLeft}px + 10px)`; missTextOverlay.style.top = 'calc(50% - 50px)';
+                let originalSlimeLeftCss = `calc(50% + ${slimeCurrentOffsetLeft}px)`;
+                slimeHpBar.style.left = originalSlimeLeftCss; 
+                slimeHpBar.style.top = 'calc(50% - 52px)'; 
+                slimeHpBar.style.transform = 'translate(-50%, -50%)';
+
+                let shiftedSlimeLeftCss = `calc(50% + ${slimeCurrentOffsetLeft}px + 50px)`;
+                
+                qteBtn.style.left = shiftedSlimeLeftCss; 
+                qteBtn.style.top = 'calc(50% - 75px)';
+                
+                qteMultiContainer.style.left = shiftedSlimeLeftCss; 
+                qteMultiContainer.style.top = 'calc(50% - 75px)';
+                
+                missTextOverlay.style.left = `calc(50% + ${slimeCurrentOffsetLeft}px + 60px)`; 
+                missTextOverlay.style.top = 'calc(50% - 50px)';
 
                 let currentNaraXCss = `calc(50% + ${naraCurrentOffsetX}px)`;
-                naraHpBar.style.left = currentNaraXCss; naraHpBar.style.top = 'calc(50% - 165px)'; naraHpBar.style.transform = 'translate(-50%, -50%)';
-                battleSlimeImg.style.left = currentSlimeLeftCss; battleSlimeImg.style.top = '50%'; battleSlimeImg.style.transform = 'translate(-50%, -50%)';
-                battleNaraImg.style.left = currentNaraXCss; battleNaraImg.style.top = '50%'; battleNaraImg.style.transform = 'translate(-50%, -50%)';
+                naraHpBar.style.left = currentNaraXCss; 
+                naraHpBar.style.top = 'calc(50% - 165px)'; 
+                naraHpBar.style.transform = 'translate(-50%, -50%)';
+
+                battleSlimeImg.style.left = shiftedSlimeLeftCss; 
+                battleSlimeImg.style.top = '50%'; 
+                battleSlimeImg.style.transform = 'translate(-50%, -50%)';
+
+                battleNaraImg.style.left = currentNaraXCss; 
+                battleNaraImg.style.top = '50%'; 
+                battleNaraImg.style.transform = 'translate(-50%, -50%)';
 
                 if (turnPhase === 'idle') {
                     if (slimeStunned) {
@@ -2138,6 +2254,9 @@
                     if (naraCurrentOffsetX <= (naraStartOffsetX - 120)) {
                         naraCurrentOffsetX = naraStartOffsetX - 120;
                         turnPhase = 'nara_attack'; turnTimer = 0; naraAttackFrame = 0; naraAttackAnimTimer = 0;
+                        
+                        naraAttackVariation = (Math.random() < 0.5) ? 1 : 2;
+
                         qteTargetKey = getRandomQTEKey(); qteSuccess = false; qteActive = true;
                         qteBtn.textContent = qteTargetKey; qteBtn.style.background = 'rgba(42, 31, 22, 0.9)'; qteBtn.style.borderColor = '#a37c57'; qteBtn.style.display = 'flex';
                     }
@@ -2146,13 +2265,13 @@
                     if (naraAttackFrame === 1 && qteActive) { qteActive = false; qteBtn.style.display = 'none'; }
 
                     if (naraAttackFrame === 0) {
-                        battleNaraImg.src = 'narab1.png';
+                        battleNaraImg.src = (naraAttackVariation === 1) ? 'narab1.png' : 'narab11.png';
                         if (naraAttackAnimTimer >= 300) { naraAttackFrame = 1; naraAttackAnimTimer = 0; }
                     } else if (naraAttackFrame === 1) {
-                        battleNaraImg.src = 'narab2.png';
+                        battleNaraImg.src = (naraAttackVariation === 1) ? 'narab2.png' : 'narab21.png';
                         if (naraAttackAnimTimer >= 150) {
                             qteBtn.style.display = 'none'; qteActive = false;
-                            let isHit = Math.random() < (qteSuccess ? 1.0 : 0.5);
+                            let isHit = Math.random() < (qteSuccess ? 1.0 : 0.25);
                             if (isHit) { turnPhase = 'slime_hit_blink'; turnTimer = 0; isSlimeBlinking = true; }
                             else { turnPhase = 'slime_miss_anim'; turnTimer = 0; slimeMissTimer = 0; }
                         }
@@ -2186,7 +2305,7 @@
                     slimeMissTimer += deltaTime; turnTimer += deltaTime;
                     if (slimeMissTimer >= 300) missTextOverlay.style.display = 'block';
                     battleSlimeImg.style.visibility = (Math.floor(turnTimer / 25) % 2 === 0) ? 'hidden' : 'visible';
-                    battleSlimeImg.style.transform = (turnTimer <= 100) ? 'translate(calc(-50% - 50px), calc(-50% - 50px))' : 'translate(-50%, -50%)';
+                    battleSlimeImg.style.transform = (turnTimer <= 100) ? 'translate(calc(-50% + 50px), calc(-50% - 50px))' : 'translate(-50%, -50%)';
 
                     if (turnTimer >= 400) {
                         battleSlimeImg.style.visibility = 'visible'; battleSlimeImg.style.transform = 'translate(-50%, -50%)'; missTextOverlay.style.display = 'none';
@@ -2195,18 +2314,29 @@
                         else { turnPhase = 'slime_counter_prep'; turnTimer = 0; }
                     }
                 } else if (turnPhase === 'defend_nara_anim') {
-                    turnTimer += deltaTime; battleNaraImg.src = 'narabd.png';
+                    turnTimer += deltaTime;
+                    battleNaraImg.src = 'narabd.png';
                     
                     if (slimeStunned) {
+                        // Jika Slime dalam kondisi STUN: Tanpa narabd2.png, langsung kembali
                         if (turnTimer >= 500) {
-                            turnPhase = 'defend_success_nara2'; turnTimer = 0;
-                            battleNaraImg.src = 'narabd2.png';
+                            slimeCurrentOffsetLeft = slimeStartOffsetLeft;
+                            turnPhase = 'nara_backward';
+                            naraWalkAnimTimer = 0;
+                            naraWalkFrame = 0;
                         }
                     } else {
                         if (turnTimer >= 500) {
-                            slimeCurrentOffsetLeft = slimeStartOffsetLeft + 100; turnPhase = 'defend_slime_guarded'; turnTimer = 0;
-                            qteTargetKey = getRandomQTEKey(); qteSuccess = false; qteActive = true;
-                            qteBtn.textContent = qteTargetKey; qteBtn.style.background = 'rgba(42, 31, 22, 0.9)'; qteBtn.style.borderColor = '#a37c57'; qteBtn.style.display = 'flex';
+                            slimeCurrentOffsetLeft = slimeStartOffsetLeft + 100;
+                            turnPhase = 'defend_slime_guarded';
+                            turnTimer = 0;
+                            qteTargetKey = getRandomQTEKey();
+                            qteSuccess = false;
+                            qteActive = true;
+                            qteBtn.textContent = qteTargetKey;
+                            qteBtn.style.background = 'rgba(42, 31, 22, 0.9)';
+                            qteBtn.style.borderColor = '#a37c57';
+                            qteBtn.style.display = 'flex';
                         }
                     }
                 } else if (turnPhase === 'defend_slime_guarded') {
@@ -2220,9 +2350,11 @@
                     } else {
                         qteBtn.style.display = 'none'; qteActive = false;
                         if (qteSuccess || Math.random() < 0.25) {
-                            slimeStunned = true; turnPhase = 'defend_success_nara2'; turnTimer = 0; 
+                            slimeStunned = true;
+                            turnPhase = 'defend_success_nara2';
+                            turnTimer = 0;
                             battleNaraImg.src = 'narabd2.png';
-                            playSfx(slimeaSfx); 
+                            playSfx(blockSfx); 
                         } else {
                             slimeCurrentOffsetLeft = slimeStartOffsetLeft; modifyStat('hp', -1);
                             turnPhase = 'nara_hit_blink'; turnTimer = 0;
@@ -2261,18 +2393,35 @@
                         }
                     }
                 } else if (turnPhase === 'nara_dodge_miss') {
-                    slimeMissTimer += deltaTime; turnTimer += deltaTime;
-                    if (slimeMissTimer >= 300) missTextOverlay.style.display = 'block';
-                    battleNaraImg.style.visibility = (Math.floor(turnTimer / 25) % 2 === 0) ? 'hidden' : 'visible';
-                    battleNaraImg.src = 'narabdg.png';
-
-                    if (turnTimer === deltaTime) {
+                    if (turnTimer === 0) {
+                        naraPreDodgeOffsetX = naraCurrentOffsetX;
+                        naraCurrentOffsetX += 50;
                         playSfx(missSfx); 
                     }
 
+                    slimeMissTimer += deltaTime; turnTimer += deltaTime;
+                    if (slimeMissTimer >= 300) missTextOverlay.style.display = 'block';
+
+                    battleNaraImg.style.visibility = (Math.floor(turnTimer / 25) % 2 === 0) ? 'hidden' : 'visible';
+                    battleNaraImg.src = 'narabdg.png';
+
                     if (turnTimer >= 300) {
-                        battleNaraImg.style.visibility = 'visible'; battleNaraImg.src = 'narabi.png'; missTextOverlay.style.display = 'none';
-                        battleSlimeImg.src = 'slimeb1.png'; slimeCurrentOffsetLeft = slimeStartOffsetLeft; turnPhase = 'nara_backward'; naraWalkAnimTimer = 0; naraWalkFrame = 0;
+                        battleNaraImg.style.visibility = 'visible'; 
+                        battleNaraImg.src = 'narabi.png'; 
+                        missTextOverlay.style.display = 'none';
+                        battleSlimeImg.src = 'slimeb1.png'; 
+                        slimeCurrentOffsetLeft = slimeStartOffsetLeft; 
+
+                        naraCurrentOffsetX = naraPreDodgeOffsetX;
+
+                        if (naraCurrentOffsetX < naraStartOffsetX) {
+                            turnPhase = 'nara_backward';
+                            naraWalkAnimTimer = 0;
+                            naraWalkFrame = 0;
+                        } else {
+                            turnPhase = 'idle';
+                            battleActionContainer.style.display = 'flex';
+                        }
                     }
                 } else if (turnPhase === 'nara_hit_blink') {
                     turnTimer += deltaTime;
@@ -2347,17 +2496,11 @@
                 if (waterTransitionTimer >= 1000) { isWaterTransitioning = false; waterTransitionAlpha = 1.0; }
             }
 
-            let gameMinutesElapsed = (deltaTime / 1000) * (30 / 60);
-            gameTimeMinutes += gameMinutesElapsed;
+            let frameGameMinutes = (energySpeedMode === 'fast') ? (deltaTime / 1000) * 12 : (deltaTime / 1000) * (30 / 60);
+            gameTimeMinutes += frameGameMinutes;
             if (gameTimeMinutes >= 24 * 60) gameTimeMinutes -= 24 * 60; 
 
-            if (!isResting && !isBedSleeping) {
-                energyLossAccumulator += gameMinutesElapsed;
-                if (energyLossAccumulator >= 60) {
-                    let energyLost = Math.floor(energyLossAccumulator / 60);
-                    energyLossAccumulator %= 60; modifyStat('energy', -energyLost);
-                }
-            } else energyLossAccumulator = 0; 
+            updateEnergy(deltaTime);
 
             if (searchCooldownTimer > 0) searchCooldownTimer -= deltaTime;
 
@@ -2964,7 +3107,6 @@
                         }
                     }
                 } else if (isMapWalking) {
-                    // MENGGUNAKAN ANIMASI BERJALAN STANDARD (TANPA PENGGUNAAN CARI/CARIB SAMA SEKALI)
                     currentImg = lastFacing === 'back' ? (animStep === 0 ? charBack0Img : animStep === 1 ? charBack1Img : charBack2Img) : (animStep === 0 ? charWalk1Img : animStep === 1 ? charWalk2Img : charDefaultImg);
                 } else if (isDrinkingAnim) {
                     currentImg = (drinkStep === 0) ? cari4Img : minumImg;
